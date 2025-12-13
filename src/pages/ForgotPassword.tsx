@@ -23,6 +23,7 @@ const ForgotPassword = () => {
     setIsSubmitting(true);
 
     try {
+      // Use the reset-password page URL as the redirect
       await resetPassword(email);
       setSuccess(true);
       // Clear email after successful submission

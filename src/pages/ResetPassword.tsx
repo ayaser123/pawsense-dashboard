@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,31 +11,36 @@ import { supabase } from "@/lib/supabase";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isValidToken, setIsValidToken] = useState(true);
+  const [isValidToken, setIsValidToken] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
-  // Verify that user is in recovery mode (has valid reset token)
+  // Check if user has valid recovery session from email link
   useEffect(() => {
     const checkRecoveryMode = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        // In recovery mode, the session should exist but user should be in specific recovery state
-        // For now, we'll trust the redirect from email
-        setIsChecking(false);
+        // Supabase automatically handles the recovery token in the URL hash
+        // and sets the session accordingly when user clicks the email link
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // If we have any session, we're likely in recovery mode
+        if (session) {
+          setIsValidToken(true);
+        }
       } catch (err) {
         console.error("Error checking recovery mode:", err);
-        setIsValidToken(false);
+      } finally {
         setIsChecking(false);
       }
     };
 
     checkRecoveryMode();
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,9 +60,10 @@ const ResetPassword = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      // Update user password
+      const { error: updateError } = await supabase.auth.updateUser({ password });
       
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       setSuccess(true);
       setPassword("");
