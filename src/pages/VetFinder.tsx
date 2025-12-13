@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { sampleVets, VetLocation } from "@/data/petData";
 import {
   MapPin,
   Navigation,
@@ -23,17 +22,42 @@ import {
   ChevronRight,
   Locate,
   X,
+  Loader,
 } from "lucide-react";
+import { getUserLocation, searchNearbyVets } from "@/services/locationAPI";
+import type { Veterinarian } from "@/services/locationAPI";
 
-const specialties = ["All Specialties", "General Practice", "Emergency Care", "Dermatology", "Surgery", "Dental"];
+const specialties = ["All Specialties", "General Practice", "Emergency Care", "Surgery", "Dental"];
 
 export default function VetFinder() {
   const [searchQuery, setSearchQuery] = useState("");
   const [specialty, setSpecialty] = useState("All Specialties");
-  const [selectedVet, setSelectedVet] = useState<VetLocation | null>(null);
+  const [selectedVet, setSelectedVet] = useState<Veterinarian | null>(null);
   const [showBooking, setShowBooking] = useState(false);
+  const [vets, setVets] = useState<Veterinarian[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const filteredVets = sampleVets.filter((vet) => {
+  // Load vets on mount
+  useEffect(() => {
+    const loadVets = async () => {
+      setIsLoading(true);
+      try {
+        const location = await getUserLocation();
+        setUserLocation({ lat: location.latitude, lng: location.longitude });
+        const nearbyVets = await searchNearbyVets(location.latitude, location.longitude, 15);
+        setVets(nearbyVets);
+      } catch (error) {
+        console.error("Error loading vets:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadVets();
+  }, []);
+
+  const filteredVets = vets.filter((vet) => {
     const matchesSearch = vet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vet.address.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSpecialty = specialty === "All Specialties" || vet.specialty === specialty;
@@ -112,58 +136,111 @@ export default function VetFinder() {
         {/* Results Grid */}
         <section className="py-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-muted-foreground">
-                <span className="font-bold text-foreground">{filteredVets.length}</span> veterinarians found
-              </p>
-              <Select defaultValue="distance">
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="distance">Nearest</SelectItem>
-                  <SelectItem value="rating">Top Rated</SelectItem>
-                  <SelectItem value="available">Available Now</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                <p className="text-gray-600">Loading nearby veterinarians...</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <p className="text-muted-foreground">
+                    <span className="font-bold text-foreground">{filteredVets.length}</span> veterinarians found
+                  </p>
+                  <Select defaultValue="distance">
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="distance">Nearest</SelectItem>
+                      <SelectItem value="rating">Top Rated</SelectItem>
+                      <SelectItem value="available">Available Now</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVets.map((vet, index) => (
-                <motion.div
-                  key={vet.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card
-                    variant="elevated"
-                    className={`cursor-pointer transition-all duration-300 ${
-                      selectedVet?.id === vet.id ? "ring-2 ring-primary" : ""
-                    }`}
-                    onClick={() => setSelectedVet(vet)}
-                  >
-                    <CardContent className="p-6">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-success/20 to-success/5 flex items-center justify-center">
-                            <Stethoscope className="h-7 w-7 text-success" />
-                          </div>
-                          <div>
-                            <h3 className="font-heading font-bold text-foreground">{vet.name}</h3>
-                            <p className="text-sm text-muted-foreground">{vet.specialty}</p>
-                          </div>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          vet.available ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                        }`}>
-                          {vet.available ? "Open" : "Closed"}
-                        </span>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredVets.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <p className="text-gray-600">No veterinarians found matching your criteria.</p>
+                    </div>
+                  ) : (
+                    filteredVets.map((vet, index) => (
+                      <motion.div
+                        key={`${vet.lat}-${vet.lng}-${index}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <Card
+                          variant="elevated"
+                          className={`cursor-pointer transition-all duration-300 ${
+                            selectedVet?.lat === vet.lat && selectedVet?.lng === vet.lng ? "ring-2 ring-primary" : ""
+                          }`}
+                          onClick={() => setSelectedVet(vet)}
+                        >
+                          <CardContent className="p-6">
+                            {/* Header */}
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-success/20 to-success/5 flex items-center justify-center">
+                                  <Stethoscope className="h-7 w-7 text-success" />
+                                </div>
+                                <div>
+                                  <h3 className="font-heading font-bold text-foreground">{vet.name}</h3>
+                                  <p className="text-sm text-muted-foreground">{vet.specialty || "General Practice"}</p>
+                                </div>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                vet.open ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {vet.open ? "Open" : "Closed"}
+                              </span>
+                            </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-4 mb-4 text-sm">
+                            {/* Stats */}
+                            <div className="flex items-center gap-4 mb-4 text-sm">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                <span className="font-medium">{vet.rating?.toFixed(1) || "4.5"}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4 text-primary" />
+                                <span>{vet.distance}</span>
+                              </div>
+                            </div>
+
+                            {/* Info */}
+                            <div className="space-y-2 mb-4">
+                              <p className="text-sm text-muted-foreground">{vet.address}</p>
+                              {vet.phone && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Phone className="h-4 w-4 text-primary" />
+                                  <a href={`tel:${vet.phone}`} className="text-primary hover:underline">
+                                    {vet.phone}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Button */}
+                            <Button
+                              onClick={() => setShowBooking(true)}
+                              className="w-full"
+                              variant="outline"
+                              size="sm"
+                            >
+                              View Details
+                              <ChevronRight className="h-4 w-4 ml-2" />
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 text-accent fill-accent" />
                           <span className="font-bold">{vet.rating}</span>
