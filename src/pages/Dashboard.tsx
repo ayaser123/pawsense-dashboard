@@ -17,13 +17,30 @@ import { TelehealthConnect } from "@/components/dashboard/TelehealthConnect"
 import { GPSActivityMap } from "@/components/dashboard/GPSActivityMap"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { sampleVets } from "@/data/petData"
 import { useNearbyVets } from "@/hooks/useNearbyVets"
 import { usePets, type Pet } from "@/hooks/usePets"
 import { useVideoAnalysis } from "@/hooks/useVideoAnalysis"
 import { useLocations } from "@/hooks/useLocation"
 import { useSleepData } from "@/hooks/useSleepData"
-import { MapPin, Activity, Sparkles, Heart, AlertCircle } from "lucide-react"
+import { useLocationMaps } from "@/hooks/useLocationMaps"
+import { useGeminiAI } from "@/hooks/useGeminiAI"
+import {
+  MapPin,
+  Activity,
+  Sparkles,
+  Heart,
+  AlertCircle,
+  Zap,
+  TrendingUp,
+  Clock,
+  Award,
+  RefreshCw,
+  Navigation,
+} from "lucide-react"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,7 +58,7 @@ const itemVariants = {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const { pets, loading: petsLoading } = usePets()
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
@@ -50,40 +67,359 @@ export default function Dashboard() {
   const { activityPath, recordLocation, startTracking, stopTracking } = useLocations()
   const [isTracking, setIsTracking] = useState(false)
   const { chartData: sleepChartData, sleepQuality, totalSleep } = useSleepData(selectedPet?.id)
+  const { vets, userLocation: mapsUserLocation, getUserLocation, findNearbyVets, isLoading: mapsLoading } = useLocationMaps()
+  const { analyzePetBehavior, isLoading: aiLoading } = useGeminiAI()
+  const [aiInsights, setAiInsights] = useState<any>(null)
+  const [healthTips, setHealthTips] = useState<string[]>([])
 
   useEffect(() => {
     if (pets.length > 0 && !selectedPet) {
       setSelectedPet(pets[0])
     }
   }, [pets, selectedPet])
-useEffect(() => {
-  if (!navigator.geolocation) return
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const coords = [pos.coords.latitude, pos.coords.longitude] as [number, number]
-      setUserLocation(coords)
-      // recordLocation is stable (memoized in hook)
-      recordLocation(pos.coords.latitude, pos.coords.longitude)
-    },
-    () => {
-      console.log("[v0] Geolocation permission denied or unavailable")
-    },
-  )
-}, [recordLocation])
 
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = [pos.coords.latitude, pos.coords.longitude] as [number, number]
+        setUserLocation(coords)
+        recordLocation(pos.coords.latitude, pos.coords.longitude)
+      },
+      () => {
+        console.log("[Dashboard] Geolocation permission denied or unavailable")
+      }
+    )
+  }, [recordLocation])
+
+  // Auto-fetch vets when location is available
+  useEffect(() => {
+    if (mapsUserLocation) {
+      findNearbyVets(mapsUserLocation.lat, mapsUserLocation.lng)
+    }
+  }, [mapsUserLocation, findNearbyVets])
 
   const handleTrackingChange = (tracking: boolean) => {
     setIsTracking(tracking)
     if (tracking) {
       startTracking()
-      console.log("[v0] GPS tracking started")
+      console.log("[Dashboard] GPS tracking started")
     } else {
       stopTracking()
-      console.log("[v0] GPS tracking stopped")
+      console.log("[Dashboard] GPS tracking stopped")
     }
   }
 
-  const { vets, loading: vetsLoading } = useNearbyVets(userLocation)
+  // Analyze pet behavior with Gemini
+  const handleAnalyzeWithAI = async () => {
+    if (!selectedPet) return
+
+    const behaviorDescription = analysis?.behavior_description || "Normal activity detected"
+    const context = `Recent mood: ${analysis?.mood || "calm"}, Activity level: normal`
+
+    const result = await analyzePetBehavior(behaviorDescription, selectedPet.species || "dog", selectedPet.age || 0, context)
+
+    if (result) {
+      setAiInsights(result)
+    }
+  }
+
+  const { vets: nearbyVets, loading: vetsLoading } = useNearbyVets(userLocation)
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    const petName = selectedPet?.name || "Your Pet"
+
+    const defaultGreeting = `Welcome back! Let's analyze ${petName}'s behavior.`
+
+    if (!analysis) {
+      return { time: hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening", mood: defaultGreeting }
+    }
+
+    const moodGreetings: Record<string, string> = {
+      happy: `${petName} is feeling great today!`,
+      calm: `${petName} is relaxed and peaceful.`,
+      anxious: `${petName} seems a bit anxious. Consider some playtime!`,
+      playful: `${petName} is full of energy!`,
+      sick: `${petName} needs care. Consult a vet.`,
+    }
+
+    return {
+      time: hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening",
+      mood: moodGreetings[analysis.mood] || defaultGreeting,
+    }
+  }, [selectedPet, analysis])
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 text-4xl">🐾</div>
+          <p className="text-lg text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/signup" />
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
+      <Navbar />
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Header with Greeting */}
+        <section className="mb-8">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-gradient bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                  {greeting.time}, {user?.user_metadata?.full_name || "Friend"}!
+                </h1>
+                <p className="text-lg text-muted-foreground mt-2 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-yellow-500" />
+                  {greeting.mood}
+                </p>
+              </div>
+              <AddPetDialog />
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Pet Selector and Quick Stats */}
+        <section className="mb-8">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <PetSelector pets={pets} selectedPet={selectedPet} onSelectPet={setSelectedPet} />
+
+            {/* Quick Stats Cards */}
+            {selectedPet && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Mood</p>
+                        <p className="text-2xl font-bold capitalize">{analysis?.mood || "Calm"}</p>
+                      </div>
+                      <Heart className="h-8 w-8 text-red-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Activity</p>
+                        <p className="text-2xl font-bold">Tracking</p>
+                      </div>
+                      <Activity className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Sleep</p>
+                        <p className="text-2xl font-bold">{totalSleep || "N/A"}</p>
+                      </div>
+                      <Clock className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Health</p>
+                        <p className="text-2xl font-bold">Good</p>
+                      </div>
+                      <Award className="h-8 w-8 text-green-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </motion.div>
+        </section>
+
+        {/* Main Content Grid */}
+        <section className="mb-8">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column - Analysis & Tools */}
+            <motion.div variants={itemVariants} className="lg:col-span-3 space-y-6">
+              <ImageUpload onImageSelect={() => {}} />
+              <SoundTranslator />
+              <TelehealthConnect />
+            </motion.div>
+
+            {/* Center Column - Maps */}
+            <motion.div variants={itemVariants} className="lg:col-span-6 space-y-6">
+              <div className="sticky top-24">
+                <Tabs value={mapMode} onValueChange={(v) => setMapMode(v as "vet" | "activity")} className="space-y-4">
+                  <TabsList className="w-full bg-gradient-to-r from-primary/10 to-purple-600/10">
+                    <TabsTrigger value="vet" className="flex-1 gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Vet Finder
+                    </TabsTrigger>
+                    <TabsTrigger value="activity" className="flex-1 gap-2">
+                      <Activity className="h-4 w-4" />
+                      Activity Map
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="vet" className="space-y-4">
+                    <GPSActivityMap
+                      mode="vet"
+                      vets={vets.length > 0 ? vets : nearbyVets.length > 0 ? nearbyVets : sampleVets}
+                      userLocation={userLocation}
+                    />
+                    {mapsLoading && <p className="text-center text-sm text-muted-foreground">Loading nearby vets...</p>}
+                  </TabsContent>
+
+                  <TabsContent value="activity" className="space-y-4">
+                    <GPSActivityMap
+                      mode="activity"
+                      activityPath={activityPath}
+                      userLocation={userLocation}
+                      isTracking={isTracking}
+                      onTrackingChange={handleTrackingChange}
+                    />
+                    <Button
+                      onClick={() => handleTrackingChange(!isTracking)}
+                      className="w-full"
+                      variant={isTracking ? "destructive" : "default"}
+                    >
+                      <Navigation className="h-4 w-4 mr-2" />
+                      {isTracking ? "Stop Tracking" : "Start Tracking"}
+                    </Button>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </motion.div>
+
+            {/* Right Column - Insights & AI */}
+            <motion.div variants={itemVariants} className="lg:col-span-3 space-y-6">
+              {selectedPet && (
+                <>
+                  <EmergencyAlert
+                    pet={{
+                      id: selectedPet.id,
+                      name: selectedPet.name,
+                      type: selectedPet.species as "dog" | "cat" | "bird" | "rabbit",
+                      breed: selectedPet.breed || "Mixed",
+                      age: selectedPet.age || 0,
+                      image: selectedPet.image_emoji || "🐾",
+                      mood: (() => {
+                        if (!analysis) return "calm"
+                        const concerns = (analysis.concerns || "").toLowerCase()
+                        if (analysis.mood === "sick" || concerns.includes("sick") || concerns.includes("ill")) return "sick"
+                        if (analysis.mood === "happy") return "happy"
+                        if (analysis.mood === "calm") return "calm"
+                        if (analysis.mood === "anxious") return "anxious"
+                        return "playful"
+                      })(),
+                      lastActivity: new Date().toISOString(),
+                    }}
+                    nearestVet={{
+                      name: (vets && vets[0]?.name) || nearbyVets[0]?.name || "Happy Paws",
+                      distance: (vets && vets[0]?.distance?.toString()) || nearbyVets[0]?.distance || "0.8 km",
+                      phone: (vets && vets[0]?.phone) || nearbyVets[0]?.phone || "+1-555-0123",
+                      address: (vets && vets[0]?.address) || nearbyVets[0]?.address || "123 Main St",
+                      lat: (vets && vets[0]?.lat) || nearbyVets[0]?.lat || null,
+                      lng: (vets && vets[0]?.lng) || nearbyVets[0]?.lng || null,
+                    }}
+                  />
+
+                  {/* AI Insights Card */}
+                  <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-yellow-500" />
+                        AI Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {aiInsights ? (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-semibold text-muted-foreground mb-2">Analysis</p>
+                            <p className="text-sm">{aiInsights.analysis}</p>
+                          </div>
+                          {aiInsights.recommendations && (
+                            <div>
+                              <p className="text-sm font-semibold text-muted-foreground mb-2">Recommendations</p>
+                              <ul className="text-sm space-y-1">
+                                {aiInsights.recommendations.map((rec: string, i: number) => (
+                                  <li key={i} className="flex gap-2">
+                                    <span className="text-primary">✓</span>
+                                    <span>{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          <Badge variant="secondary" className="w-fit">
+                            Confidence: {aiInsights.confidence}%
+                          </Badge>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Run AI analysis to get personalized insights about {selectedPet.name}.</p>
+                      )}
+                      <Button onClick={handleAnalyzeWithAI} disabled={aiLoading} className="w-full" size="sm">
+                        {aiLoading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+                        {aiLoading ? "Analyzing..." : "Analyze with AI"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {analysis && (
+                    <>
+                      <SleepTracker data={sleepChartData} sleepQuality={sleepQuality} totalSleep={totalSleep} />
+                      <PredictionsTable
+                        predictions={[
+                          {
+                            id: "1",
+                            behavior: analysis.behavior_description || "Video analysis pending",
+                            confidence: 0.95,
+                            mood: analysis.mood,
+                            timestamp: new Date().toISOString(),
+                            recommendation: analysis.concerns || "Monitor behavior regularly",
+                          },
+                        ]}
+                      />
+                    </>
+                  )}
+
+                  {!analysis && (
+                    <Card className="border-dashed">
+                      <CardHeader>
+                        <CardTitle className="text-base">Quick Start</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Upload a video in the Image Upload section to start analyzing {selectedPet.name}'s behavior!
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours()
