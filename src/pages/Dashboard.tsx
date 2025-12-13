@@ -69,7 +69,7 @@ export default function Dashboard() {
   const { chartData: sleepChartData, sleepQuality, totalSleep } = useSleepData(selectedPet?.id)
   const { vets, userLocation: mapsUserLocation, getUserLocation, findNearbyVets, isLoading: mapsLoading } = useLocationMaps()
   const { analyzePetBehavior, isLoading: aiLoading } = useGeminiAI()
-  const [aiInsights, setAiInsights] = useState<any>(null)
+  const [aiInsights, setAiInsights] = useState<{ analysis: string; recommendations: string[]; confidence: number } | null>(null)
   const [healthTips, setHealthTips] = useState<string[]>([])
 
   useEffect(() => {
