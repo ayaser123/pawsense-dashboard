@@ -241,58 +241,6 @@ export default function VetFinder() {
                 </div>
               </>
             )}
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-accent fill-accent" />
-                          <span className="font-bold">{vet.rating}</span>
-                          <span className="text-muted-foreground">(120)</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {vet.distance}
-                        </div>
-                      </div>
-
-                      {/* Address */}
-                      <p className="text-sm text-muted-foreground mb-4 flex items-start gap-2">
-                        <Navigation className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                        {vet.address}
-                      </p>
-
-                      {/* Features */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {["24/7 Emergency", "Pet Insurance", "Online Booking"].slice(0, 2).map((feature) => (
-                          <span key={feature} className="px-2 py-1 bg-secondary/50 rounded-lg text-xs text-muted-foreground">
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        <Button
-                          variant="default"
-                          className="flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedVet(vet);
-                            setShowBooking(true);
-                          }}
-                        >
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Book Now
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
           </div>
         </section>
 
