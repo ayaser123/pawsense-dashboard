@@ -73,6 +73,11 @@ export default function Dashboard() {
   const [healthTips, setHealthTips] = useState<string[]>([])
 
   useEffect(() => {
+    console.log("[Dashboard] Auth state:", { user: user?.email, authLoading })
+    console.log("[Dashboard] Pets state:", { petsCount: pets.length, petsLoading })
+  }, [user, authLoading, pets, petsLoading])
+
+  useEffect(() => {
     if (pets.length > 0 && !selectedPet) {
       setSelectedPet(pets[0])
     }
@@ -156,14 +161,18 @@ export default function Dashboard() {
         <div className="text-center">
           <div className="mb-4 text-4xl">🐾</div>
           <p className="text-lg text-muted-foreground">Loading your dashboard...</p>
+          <p className="text-sm text-muted-foreground mt-2">This may take a moment...</p>
         </div>
       </div>
     )
   }
 
   if (!user) {
+    console.log("[Dashboard] User not authenticated, redirecting to signup")
     return <Navigate to="/signup" />
   }
+
+  console.log("[Dashboard] User authenticated:", user.email)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
