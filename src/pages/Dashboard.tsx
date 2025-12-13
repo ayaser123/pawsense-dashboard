@@ -16,7 +16,6 @@ import {
   Activity, 
   Clock, 
   Zap,
-  MapPin,
   TrendingUp,
   Settings,
   AlertCircle,
@@ -42,19 +41,31 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 }
 
+interface AnalysisResult {
+  behavior: string
+  confidence: number
+  mood: string
+  energy: string
+  recommendations: string[]
+  duration: string
+  uploadedAt: string
+  id?: number
+  fileName?: string
+}
+
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth()
-  const [uploadedVideos, setUploadedVideos] = useState<any[]>([])
+  const [uploadedVideos, setUploadedVideos] = useState<AnalysisResult[]>([])
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
 
   useEffect(() => {
     console.log("[Dashboard] Auth state:", { user: user?.email, authLoading })
   }, [user, authLoading])
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       if (file.type.startsWith("video/")) {
@@ -228,7 +239,7 @@ export default function Dashboard() {
 
         {/* Tabs Section */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-white border border-gray-200 rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-4 bg-white border border-gray-200 rounded-lg p-1">
             <TabsTrigger value="overview" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700">
               <BarChart3 className="h-4 w-4 mr-2" />
               Overview
@@ -240,10 +251,6 @@ export default function Dashboard() {
             <TabsTrigger value="health" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700">
               <Heart className="h-4 w-4 mr-2" />
               Health
-            </TabsTrigger>
-            <TabsTrigger value="location" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700">
-              <MapPin className="h-4 w-4 mr-2" />
-              Location
             </TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700">
               <Settings className="h-4 w-4 mr-2" />
@@ -499,50 +506,6 @@ export default function Dashboard() {
                     Next vet checkup scheduled for Jan 15, 2026
                   </AlertDescription>
                 </Alert>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Location Tab */}
-          <TabsContent value="location" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-red-600" />
-                  Location & Nearby Vets
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="bg-gray-100 rounded-lg p-12 text-center mb-6">
-                  <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Map integration coming soon</p>
-                  <p className="text-sm text-gray-500 mt-2">Enable location services to view nearby veterinarians</p>
-                </div>
-
-                {/* Nearby Vets */}
-                <h3 className="font-semibold text-gray-900 mb-4">Nearby Veterinarians</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: "Happy Paws Clinic", distance: "0.5 km", rating: 4.8, open: true },
-                    { name: "Pet Care Center", distance: "1.2 km", rating: 4.6, open: true },
-                    { name: "Animal Hospital", distance: "2.1 km", rating: 4.9, open: false },
-                  ].map((vet, i) => (
-                    <div key={i} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-gray-900">{vet.name}</p>
-                          <p className="text-sm text-gray-600">{vet.distance} away</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge className={vet.open ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                            {vet.open ? "Open" : "Closed"}
-                          </Badge>
-                          <p className="text-sm font-semibold text-gray-900 mt-2">⭐ {vet.rating}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
