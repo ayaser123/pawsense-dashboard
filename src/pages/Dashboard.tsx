@@ -24,9 +24,13 @@ import {
   Camera,
   BarChart3,
   Shield,
-  Calendar
+  Calendar,
+  Loader
 } from "lucide-react"
 import { motion } from "framer-motion"
+import { analyzeVideoWithGemini, getMockAnalysis } from "@/services/geminiAPI"
+import { searchNearbyVets, getUserLocation, getMockVets } from "@/services/locationAPI"
+import type { Veterinarian } from "@/services/locationAPI"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -60,10 +64,32 @@ export default function Dashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
+  const [nearbyVets, setNearbyVets] = useState<Veterinarian[]>([])
+  const [isLoadingVets, setIsLoadingVets] = useState(false)
 
+  // Load nearby vets on component mount
   useEffect(() => {
-    console.log("[Dashboard] Auth state:", { user: user?.email, authLoading })
-  }, [user, authLoading])
+    const loadVets = async () => {
+      setIsLoadingVets(true)
+      try {
+        const location = await getUserLocation()
+        if (location.latitude && location.longitude) {
+          const vets = await searchNearbyVets(location.latitude, location.longitude, 10)
+          setNearbyVets(vets)
+        } else {
+          // Fallback to mock vets if location not available
+          setNearbyVets(getMockVets())
+        }
+      } catch (error) {
+        console.error("Error loading vets:", error)
+        setNearbyVets(getMockVets())
+      } finally {
+        setIsLoadingVets(false)
+      }
+    }
+
+    loadVets()
+  }, [])
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -85,31 +111,35 @@ export default function Dashboard() {
 
     setIsAnalyzing(true)
     
-    // Simulate video analysis
-    setTimeout(() => {
-      const mockAnalysis = {
-        behavior: "Playful and energetic",
-        confidence: 0.92,
-        mood: "Happy",
-        energy: "High",
-        recommendations: [
-          "Pet is in excellent mood",
-          "Consider more outdoor activities",
-          "Hydration level looks good"
-        ],
-        duration: "2m 34s",
-        uploadedAt: new Date().toLocaleString()
+    try {
+      // Try to use Gemini API, fallback to mock if not available
+      let analysis
+      try {
+        analysis = await analyzeVideoWithGemini(videoFile)
+      } catch (error) {
+        console.warn("Gemini API unavailable, using mock analysis:", error)
+        // Simulate analysis delay with mock
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        analysis = getMockAnalysis()
       }
       
-      setAnalysisResult(mockAnalysis)
-      setUploadedVideos([...uploadedVideos, {
-        ...mockAnalysis,
+      const result: AnalysisResult = {
+        ...analysis,
+        duration: "2m 34s",
+        uploadedAt: new Date().toLocaleString(),
         id: Date.now(),
         fileName: videoFile.name
-      }])
+      }
+      
+      setAnalysisResult(result)
+      setUploadedVideos([...uploadedVideos, result])
       setVideoFile(null)
+    } catch (error) {
+      console.error("Analysis error:", error)
+      alert("Failed to analyze video. Please try again.")
+    } finally {
       setIsAnalyzing(false)
-    }, 2000)
+    }
   }
 
   if (authLoading) {
@@ -548,6 +578,60 @@ export default function Dashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6 mt-6">
+            {/* Nearby Vets */}
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-red-600" />
+                  Nearby Veterinarians
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {isLoadingVets ? (
+                  <div className="text-center py-8">
+                    <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+                    <p className="text-gray-600">Loading nearby vets...</p>
+                  </div>
+                ) : nearbyVets.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No veterinarians found. Showing mock data.</p>
+                ) : null}
+                <div className="space-y-3">
+                  {nearbyVets.map((vet, i) => (
+                    <div key={i} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{vet.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">{vet.address}</p>
+                          {vet.phone && (
+                            <p className="text-sm text-gray-600">{vet.phone}</p>
+                          )}
+                          {vet.website && (
+                            <a 
+                              href={vet.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              {vet.website}
+                            </a>
+                          )}
+                        </div>
+                        <div className="text-right ml-4">
+                          <Badge className={vet.open ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                            {vet.open ? "Open" : "Closed"}
+                          </Badge>
+                          <p className="text-sm font-semibold text-gray-900 mt-2">{vet.distance}</p>
+                          {vet.rating && (
+                            <p className="text-sm font-semibold text-gray-900">⭐ {vet.rating}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
