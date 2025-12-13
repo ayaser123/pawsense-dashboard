@@ -118,7 +118,18 @@ export function useLocationMaps() {
 
         const data = await response.json()
 
-        const formattedVets: Vet[] = (data.results || []).map((place: any) => ({
+        interface PlaceResult {
+          place_id: string
+          name: string
+          vicinity: string
+          geometry: { location: { lat: number; lng: number } }
+          rating?: number
+          formatted_phone_number?: string
+          opening_hours?: { open_now?: boolean }
+          types: string[]
+        }
+
+        const formattedVets: Vet[] = (data.results || []).map((place: PlaceResult) => ({
           id: place.place_id,
           name: place.name,
           address: place.vicinity,

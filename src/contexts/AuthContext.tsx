@@ -121,5 +121,5 @@ export function useAuthContext() {
   return context
 }
 
-// Export as AuthContext for backward compatibility with hooks
+// Export AuthContext for use in other hooks
 export { AuthContext }
