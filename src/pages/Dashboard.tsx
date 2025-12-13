@@ -304,7 +304,7 @@ export default function Dashboard() {
                     Upload Video
                   </Button>
                   <Button className="w-full bg-green-600 hover:bg-green-700">
-                    <MapPin className="h-4 w-4 mr-2" />
+                    <Zap className="h-4 w-4 mr-2" />
                     Find Vets
                   </Button>
                 </CardContent>
