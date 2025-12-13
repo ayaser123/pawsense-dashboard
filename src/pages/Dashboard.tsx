@@ -295,15 +295,51 @@ export default function Dashboard() {
                   <CardTitle className="text-base">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-3">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <input
+                    type="file"
+                    id="photo-upload"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        alert(`Photo selected: ${file.name}`);
+                      }
+                    }}
+                  />
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                  >
                     <Camera className="h-4 w-4 mr-2" />
                     Upload Photo
                   </Button>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700">
+
+                  <input
+                    type="file"
+                    id="video-upload"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setVideoFile(file);
+                        setActiveTab('video');
+                      }
+                    }}
+                  />
+                  <Button 
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    onClick={() => document.getElementById('video-upload')?.click()}
+                  >
                     <Video className="h-4 w-4 mr-2" />
                     Upload Video
                   </Button>
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
+
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => window.location.href = '/vet-finder'}
+                  >
                     <Zap className="h-4 w-4 mr-2" />
                     Find Vets
                   </Button>
