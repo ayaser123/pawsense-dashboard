@@ -98,28 +98,28 @@ export async function searchNearbyVets(
       body: query,
     });
 
-    const data = await response.json();
+    const data = await response.json() as { elements?: Array<{ lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> };
     const vets: Veterinarian[] = [];
 
-    data.elements?.forEach((element: any) => {
+    data.elements?.forEach((element) => {
       const lat = element.lat || element.center?.lat;
       const lng = element.lon || element.center?.lon;
 
-      if (lat && lng) {
+      if (lat && lng && element.tags) {
         const distance = calculateDistance(latitude, longitude, lat, lng);
 
         if (distance <= radiusKm) {
           vets.push({
-            name: element.tags?.name || "Veterinary Clinic",
-            address: element.tags?.["addr:full"] || `${lat}, ${lng}`,
-            phone: element.tags?.phone,
-            website: element.tags?.website,
-            rating: element.tags?.["amenity:level"] ? 4.5 : undefined,
+            name: element.tags["name"] || "Veterinary Clinic",
+            address: element.tags["addr:full"] || `${lat}, ${lng}`,
+            phone: element.tags["phone"],
+            website: element.tags["website"],
+            rating: element.tags["amenity:level"] ? 4.5 : undefined,
             distance: `${distance.toFixed(1)} km`,
             distanceKm: distance,
             lat,
             lng,
-            open: element.tags?.["opening_hours"] !== undefined,
+            open: element.tags["opening_hours"] !== undefined,
           });
         }
       }
