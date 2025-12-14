@@ -246,12 +246,15 @@ export default function VetFinder() {
               </div>
             ) : error ? (
               <div className="py-12 text-center">
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
-                  <h3 className="font-semibold text-foreground mb-2">No Veterinarians Found</h3>
-                  <p className="text-muted-foreground text-sm mb-4">{error}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Data is sourced from OpenStreetMap. Make sure the location is correct and vets are registered in the database.
-                  </p>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-8 max-w-xl mx-auto">
+                  <h3 className="font-semibold text-foreground mb-3">Limited Veterinarians Available</h3>
+                  <p className="text-muted-foreground text-sm mb-6">{error}</p>
+                  <div className="bg-background rounded p-4 text-left text-xs text-muted-foreground space-y-3 mb-4">
+                    <p><strong>📌 Note:</strong> PawSense uses real, verified data from OpenStreetMap - the world's largest open database of locations.</p>
+                    <p><strong>🏥 Limited Coverage:</strong> Some regions may have incomplete veterinary clinic listings on OpenStreetMap.</p>
+                    <p><strong>🤝 Help Improve:</strong> You can add missing veterinary clinics at <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openstreetmap.org</a></p>
+                    <p><strong>💡 Tip:</strong> Try searching nearby cities or larger regions to find available vets.</p>
+                  </div>
                 </div>
               </div>
             ) : (

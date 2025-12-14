@@ -163,19 +163,22 @@ async function searchVetsViaOverpass(
 ): Promise<Veterinarian[]> {
   try {
     const bbox = calculateBBox(latitude, longitude, radiusKm);
-    console.log(`🔍 Overpass: Searching ${radiusKm}km radius at ${latitude}, ${longitude}`);
+    console.log(`🔍 Overpass: Searching ${radiusKm}km radius at [${bbox.south},${bbox.west},${bbox.north},${bbox.east}]`);
     
-    // Use around query for better results
+    // Query for veterinary clinics and animal hospitals
     const query = `
-      [out:json];
+      [out:json][timeout:30];
       (
         node["amenity"="veterinary"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
         way["amenity"="veterinary"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
         relation["amenity"="veterinary"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+        node["shop"="pet"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+        way["shop"="pet"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
       );
-      out center;
+      out center geom;
     `;
 
+    console.log(`📤 Sending Overpass query...`);
     const response = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: query,
@@ -189,6 +192,10 @@ async function searchVetsViaOverpass(
 
     const data = await response.json() as { elements?: Array<{ lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> };
     console.log(`📊 Overpass returned ${data.elements?.length || 0} elements`);
+    
+    if (data.elements && data.elements.length > 0) {
+      console.log(`🏥 First few results:`, data.elements.slice(0, 3).map(e => ({ name: e.tags?.name, amenity: e.tags?.amenity, shop: e.tags?.shop })));
+    }
     
     const vets: Veterinarian[] = [];
 
