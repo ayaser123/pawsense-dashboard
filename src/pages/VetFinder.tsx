@@ -37,18 +37,33 @@ export default function VetFinder() {
   const [vets, setVets] = useState<Veterinarian[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load vets on mount
   useEffect(() => {
     const loadVets = async () => {
       setIsLoading(true);
+      setError(null);
       try {
+        console.log("🐾 VetFinder: Starting location detection...");
         const location = await getUserLocation();
+        console.log("📍 VetFinder: Got location:", location);
+        
         setUserLocation({ lat: location.latitude, lng: location.longitude });
+        
+        console.log("🔍 VetFinder: Searching for nearby vets...");
         const nearbyVets = await searchNearbyVets(location.latitude, location.longitude, 15);
+        console.log("✅ VetFinder: Found vets:", nearbyVets);
+        
+        if (nearbyVets.length === 0) {
+          setError("No veterinarians found in this area. Try adjusting your location or search radius.");
+          console.warn("⚠️ No veterinarians found in database for this location");
+        }
+        
         setVets(nearbyVets);
       } catch (error) {
-        console.error("Error loading vets:", error);
+        console.error("❌ VetFinder: Error loading vets:", error);
+        setError("Unable to load veterinarians. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -140,6 +155,16 @@ export default function VetFinder() {
               <div className="text-center py-12">
                 <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
                 <p className="text-gray-600">Loading nearby veterinarians...</p>
+              </div>
+            ) : error ? (
+              <div className="py-12 text-center">
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
+                  <h3 className="font-semibold text-foreground mb-2">No Veterinarians Found</h3>
+                  <p className="text-muted-foreground text-sm mb-4">{error}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Data is sourced from OpenStreetMap. Make sure the location is correct and vets are registered in the database.
+                  </p>
+                </div>
               </div>
             ) : (
               <>

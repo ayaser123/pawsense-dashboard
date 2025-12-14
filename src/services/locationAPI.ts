@@ -28,29 +28,33 @@ export interface Veterinarian {
 export async function getUserLocation(): Promise<Location> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
+      console.warn("⚠️  Geolocation not supported by browser, using Islamabad fallback");
       resolve({
-        latitude: 0,
-        longitude: 0,
+        latitude: 33.6844,
+        longitude: 74.3355,
+        city: "Islamabad",
         error: "Geolocation not supported by browser",
       });
       return;
     }
 
+    console.log("📍 Requesting user geolocation...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log("✅ Got user location:", position.coords.latitude, position.coords.longitude);
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
       },
       (error) => {
-        console.error("Geolocation error:", error);
+        console.warn("⚠️  Geolocation error:", error.message, "Using Islamabad fallback");
         // Fallback to Islamabad coordinates if user denies location
         resolve({
           latitude: 33.6844,
           longitude: 74.3355,
           city: "Islamabad",
-          error: "Using default location (Islamabad)",
+          error: `Geolocation error: ${error.message}. Using Islamabad as fallback.`,
         });
       }
     );
@@ -86,7 +90,7 @@ export async function getAddressFromCoordinates(
 }
 
 /**
- * Search for nearby veterinarians - Enhanced with multiple sources
+ * Search for nearby veterinarians - Real data only with expanded search radius
  */
 export async function searchNearbyVets(
   latitude: number,
@@ -94,26 +98,31 @@ export async function searchNearbyVets(
   radiusKm: number = 15
 ): Promise<Veterinarian[]> {
   try {
-    const vets: Veterinarian[] = [];
-
-    // Try Overpass API first
-    const overpassVets = await searchVetsViaOverpass(latitude, longitude, radiusKm);
-    vets.push(...overpassVets);
-
-    // If no results, use mock vets with user's location
-    if (vets.length === 0) {
-      return getMockVetsForLocation(latitude, longitude);
+    console.log(`📍 Searching real vets near ${latitude}, ${longitude} within ${radiusKm}km`);
+    
+    // Try Overpass API with expanding radius
+    let overpassVets = await searchVetsViaOverpass(latitude, longitude, radiusKm);
+    
+    if (overpassVets.length === 0 && radiusKm < 50) {
+      console.log(`⚠️  No vets found in ${radiusKm}km, expanding search to 50km...`);
+      overpassVets = await searchVetsViaOverpass(latitude, longitude, 50);
     }
-
-    return vets.sort((a, b) => a.distanceKm - b.distanceKm);
+    
+    if (overpassVets.length === 0 && radiusKm < 100) {
+      console.log(`⚠️  No vets found in 50km, expanding search to 100km...`);
+      overpassVets = await searchVetsViaOverpass(latitude, longitude, 100);
+    }
+    
+    console.log(`✅ Found ${overpassVets.length} real vets from OpenStreetMap`);
+    return overpassVets.sort((a, b) => a.distanceKm - b.distanceKm);
   } catch (error) {
-    console.error("Vet search error:", error);
-    return getMockVetsForLocation(latitude, longitude);
+    console.error("❌ Vet search error:", error);
+    return [];
   }
 }
 
 /**
- * Search vets using OpenStreetMap Overpass API
+ * Search vets using OpenStreetMap Overpass API with improved query
  */
 async function searchVetsViaOverpass(
   latitude: number,
@@ -122,12 +131,15 @@ async function searchVetsViaOverpass(
 ): Promise<Veterinarian[]> {
   try {
     const bbox = calculateBBox(latitude, longitude, radiusKm);
+    console.log(`🔍 Overpass: Searching ${radiusKm}km radius at ${latitude}, ${longitude}`);
+    
+    // Use around query for better results
     const query = `
-      [bbox:${bbox.south},${bbox.west},${bbox.north},${bbox.east}];
+      [out:json];
       (
-        node["amenity"="veterinary"];
-        way["amenity"="veterinary"];
-        relation["amenity"="veterinary"];
+        node["amenity"="veterinary"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+        way["amenity"="veterinary"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+        relation["amenity"="veterinary"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
       );
       out center;
     `;
@@ -135,9 +147,17 @@ async function searchVetsViaOverpass(
     const response = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: query,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
+    if (!response.ok) {
+      console.error(`❌ Overpass API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
     const data = await response.json() as { elements?: Array<{ lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> };
+    console.log(`📊 Overpass returned ${data.elements?.length || 0} elements`);
+    
     const vets: Veterinarian[] = [];
 
     data.elements?.forEach((element) => {
@@ -147,27 +167,29 @@ async function searchVetsViaOverpass(
       if (lat && lng && element.tags) {
         const distance = calculateDistance(latitude, longitude, lat, lng);
 
-        if (distance <= radiusKm) {
-          vets.push({
-            name: element.tags["name"] || "Veterinary Clinic",
-            address: element.tags["addr:full"] || element.tags["addr:street"] || `${lat}, ${lng}`,
-            phone: element.tags["phone"] || element.tags["contact:phone"],
-            website: element.tags["website"] || element.tags["contact:website"],
-            rating: 4.5,
-            distance: `${distance.toFixed(1)} km`,
-            distanceKm: distance,
-            lat,
-            lng,
-            open: element.tags["opening_hours"] !== undefined,
-            specialty: "General Practice",
-          });
-        }
+        vets.push({
+          name: element.tags["name"] || "Veterinary Clinic",
+          address: element.tags["addr:full"] || 
+                   `${element.tags["addr:street"] || ""} ${element.tags["addr:housenumber"] || ""}`.trim() || 
+                   `${element.tags["addr:city"] || ""}`.trim() ||
+                   `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+          phone: element.tags["phone"] || element.tags["contact:phone"],
+          website: element.tags["website"] || element.tags["contact:website"],
+          rating: 4.5,
+          distance: `${distance.toFixed(1)} km`,
+          distanceKm: distance,
+          lat,
+          lng,
+          open: element.tags["opening_hours"] !== undefined,
+          specialty: "Veterinary Clinic",
+        });
       }
     });
 
+    console.log(`✅ Found ${vets.length} real veterinarians`);
     return vets;
   } catch (error) {
-    console.error("Overpass API error:", error);
+    console.error("❌ Overpass API error:", error);
     return [];
   }
 }
@@ -211,53 +233,4 @@ export function calculateDistance(
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-/**
- * Get realistic mock veterinarians for a location
- */
-function getMockVetsForLocation(latitude: number, longitude: number): Veterinarian[] {
-  const mockNames = [
-    "Happy Paws Veterinary Clinic",
-    "PetCare Center",
-    "Animal Health Hospital",
-    "Friendly Vet Services",
-    "Modern Pet Clinic",
-    "24/7 Emergency Vet",
-    "Advanced Animal Care",
-    "Riverside Veterinary Hospital",
-  ];
-
-  const vets: Veterinarian[] = [];
-
-  for (let i = 0; i < 5; i++) {
-    const offsetLat = (Math.random() - 0.5) * 0.2; // ~10-15 km radius
-    const offsetLng = (Math.random() - 0.5) * 0.2;
-    const vetLat = latitude + offsetLat;
-    const vetLng = longitude + offsetLng;
-    const distance = calculateDistance(latitude, longitude, vetLat, vetLng);
-
-    vets.push({
-      name: mockNames[i % mockNames.length],
-      address: `${Math.floor(Math.random() * 500) + 100} Pet Street, Your City`,
-      phone: `(555) ${String(100 + i * 111).padEnd(4, "0")}`,
-      website: `www.vet${i}.com`,
-      rating: 4 + Math.random(),
-      distance: `${distance.toFixed(1)} km`,
-      distanceKm: distance,
-      lat: vetLat,
-      lng: vetLng,
-      open: Math.random() > 0.3,
-      specialty: ["General Practice", "Emergency Care", "Surgery", "Dental"][i % 4],
-    });
-  }
-
-  return vets.sort((a, b) => a.distanceKm - b.distanceKm);
-}
-
-/**
- * Get mock veterinarians (fallback)
- */
-export function getMockVets(): Veterinarian[] {
-  return getMockVetsForLocation(33.6844, 74.3355); // Islamabad coordinates
 }
