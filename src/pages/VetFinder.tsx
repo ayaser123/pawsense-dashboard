@@ -24,8 +24,7 @@ import {
   X,
   Loader,
 } from "lucide-react";
-import { getUserLocation, searchNearbyVets } from "@/services/locationAPI";
-import { searchLocationByName } from "@/services/locationAPI";
+import { getUserLocation, searchNearbyVets, searchLocationByName, calculateDistance } from "@/services/locationAPI";
 import type { Veterinarian } from "@/services/locationAPI";
 
 const specialties = ["All Specialties", "General Practice", "Emergency Care", "Surgery", "Dental"];
@@ -39,8 +38,10 @@ export default function VetFinder() {
   const [vets, setVets] = useState<Veterinarian[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [actualUserLocation, setActualUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showFromActualLocation, setShowFromActualLocation] = useState(false);
 
   // Load vets on mount
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function VetFinder() {
         console.log("📍 VetFinder: Got location:", location);
         
         setUserLocation({ lat: location.latitude, lng: location.longitude });
+        setActualUserLocation({ lat: location.latitude, lng: location.longitude }); // Store actual user location
         
         console.log("🔍 VetFinder: Searching for nearby vets...");
         const nearbyVets = await searchNearbyVets(location.latitude, location.longitude, 15);
@@ -77,6 +79,24 @@ export default function VetFinder() {
 
     loadVets();
   }, []);
+
+  // Recalculate distances when toggle changes
+  useEffect(() => {
+    if (vets.length === 0 || !userLocation || !actualUserLocation) return;
+
+    const distanceBase = showFromActualLocation ? actualUserLocation : userLocation;
+    if (!distanceBase) return;
+
+    const updatedVets = vets.map(vet => ({
+      ...vet,
+      distanceKm: calculateDistance(distanceBase.lat, distanceBase.lng, vet.lat, vet.lng),
+      distance: `${calculateDistance(distanceBase.lat, distanceBase.lng, vet.lat, vet.lng).toFixed(1)} km`
+    }));
+
+    // Sort by distance
+    updatedVets.sort((a, b) => a.distanceKm - b.distanceKm);
+    setVets(updatedVets);
+  }, [showFromActualLocation, actualUserLocation]);
 
   // Handle location search
   const handleLocationSearch = async () => {
@@ -290,20 +310,35 @@ export default function VetFinder() {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                   <p className="text-muted-foreground">
                     <span className="font-bold text-foreground">{filteredVets.length}</span> veterinarians found
                   </p>
-                  <Select defaultValue="distance">
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="distance">Nearest</SelectItem>
-                      <SelectItem value="rating">Top Rated</SelectItem>
-                      <SelectItem value="available">Available Now</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                    {actualUserLocation && locationQuery && (
+                      <Button
+                        variant={showFromActualLocation ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowFromActualLocation(!showFromActualLocation)}
+                        className="whitespace-nowrap"
+                      >
+                        <Navigation className="h-4 w-4 mr-2" />
+                        {showFromActualLocation ? "From My Location" : "From Search Location"}
+                      </Button>
+                    )}
+                    
+                    <Select defaultValue="distance">
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="distance">Nearest</SelectItem>
+                        <SelectItem value="rating">Top Rated</SelectItem>
+                        <SelectItem value="available">Available Now</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
