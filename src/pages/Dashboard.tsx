@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { analyzeVideoWithGemini, getMockAnalysis } from "@/services/geminiAPI"
-import { searchNearbyVets, getUserLocation, getMockVets } from "@/services/locationAPI"
+import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
 import type { Veterinarian } from "@/services/locationAPI"
 
 const containerVariants = {
@@ -77,12 +77,12 @@ export default function Dashboard() {
           const vets = await searchNearbyVets(location.latitude, location.longitude, 10)
           setNearbyVets(vets)
         } else {
-          // Fallback to mock vets if location not available
-          setNearbyVets(getMockVets())
+          // No location available, skip loading vets
+          setNearbyVets([])
         }
       } catch (error) {
         console.error("Error loading vets:", error)
-        setNearbyVets(getMockVets())
+        setNearbyVets([])
       } finally {
         setIsLoadingVets(false)
       }
