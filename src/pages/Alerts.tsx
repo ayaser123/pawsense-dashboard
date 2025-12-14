@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { samplePets, Pet } from "@/data/petData";
+import { loadAlerts, markAlertAsRead, deleteAlert, type Alert } from "@/services/alertsService";
 import {
   Bell,
   AlertTriangle,
@@ -38,54 +39,27 @@ interface Alert {
   action?: string;
 }
 
-const mockAlerts: Alert[] = [
+// Sample fallback alerts for initial state
+const sampleAlerts: Alert[] = [
   {
-    id: "1",
+    id: "sample_1",
     type: "critical",
     title: "Unusual Behavior Detected",
-    message: "Max has been showing signs of lethargy for the past 2 hours. Consider scheduling a vet visit.",
-    pet: samplePets[2],
+    message: "Your pet has been showing signs of lethargy for the past 2 hours. Consider scheduling a vet visit.",
+    pet: samplePets[0],
     timestamp: "10 min ago",
     read: false,
     action: "Find Vet",
   },
   {
-    id: "2",
+    id: "sample_2",
     type: "warning",
     title: "Vaccination Due Soon",
-    message: "Luna's rabies vaccination is due in 5 days. Don't forget to schedule an appointment!",
+    message: "Your pet's rabies vaccination is due in 5 days. Don't forget to schedule an appointment!",
     pet: samplePets[0],
     timestamp: "1 hour ago",
     read: false,
     action: "Schedule",
-  },
-  {
-    id: "3",
-    type: "info",
-    title: "Activity Goal Reached",
-    message: "Whiskers completed their daily activity goal! 45 minutes of play time today.",
-    pet: samplePets[1],
-    timestamp: "2 hours ago",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "success",
-    title: "Sleep Quality Improved",
-    message: "Luna's sleep quality has improved by 15% this week. Great progress!",
-    pet: samplePets[0],
-    timestamp: "3 hours ago",
-    read: true,
-  },
-  {
-    id: "5",
-    type: "warning",
-    title: "Feeding Reminder",
-    message: "It's time for Whiskers' evening meal. They haven't been fed in 6 hours.",
-    pet: samplePets[1],
-    timestamp: "5 hours ago",
-    read: true,
-    action: "Mark Fed",
   },
 ];
 
@@ -99,19 +73,28 @@ const healthMetrics = [
 ];
 
 export default function Alerts() {
-  const [alerts, setAlerts] = useState(mockAlerts);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+
+  // Load alerts from localStorage on mount
+  useEffect(() => {
+    const loadedAlerts = loadAlerts();
+    // Use loaded alerts if available, otherwise use sample alerts
+    setAlerts(loadedAlerts.length > 0 ? loadedAlerts : sampleAlerts);
+  }, []);
 
   const unreadCount = alerts.filter((a) => !a.read).length;
   const criticalCount = alerts.filter((a) => a.type === "critical").length;
 
   const markAsRead = (id: string) => {
-    setAlerts(alerts.map((a) => (a.id === id ? { ...a, read: true } : a)));
+    const updated = markAlertAsRead(id);
+    setAlerts(updated);
   };
 
   const dismissAlert = (id: string) => {
-    setAlerts(alerts.filter((a) => a.id !== id));
+    const updated = deleteAlert(id);
+    setAlerts(updated);
   };
 
   const getAlertIcon = (type: Alert["type"]) => {

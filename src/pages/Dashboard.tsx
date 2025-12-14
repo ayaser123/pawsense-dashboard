@@ -30,6 +30,7 @@ import {
 import { motion } from "framer-motion"
 import { analyzeVideoWithGemini, getMockAnalysis } from "@/services/geminiAPI"
 import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
+import { createAlertFromAnalysis, addAlerts } from "@/services/alertsService"
 import type { Veterinarian } from "@/services/locationAPI"
 
 const containerVariants = {
@@ -133,6 +134,25 @@ export default function Dashboard() {
       
       setAnalysisResult(result)
       setUploadedVideos([...uploadedVideos, result])
+      
+      // Generate alerts from analysis and save them
+      if (user) {
+        const petName = user.user_metadata?.petName || "Your Pet"
+        const currentPet = { 
+          id: user.id, 
+          name: petName, 
+          image: "🐾",
+          breed: "Pet",
+          age: 1,
+          weight: 0
+        }
+        
+        const generatedAlerts = createAlertFromAnalysis(result, currentPet)
+        addAlerts(generatedAlerts)
+        
+        console.log(`✅ Created ${generatedAlerts.length} alerts from analysis`)
+      }
+      
       setVideoFile(null)
     } catch (error) {
       console.error("Analysis error:", error)
