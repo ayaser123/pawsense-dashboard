@@ -32,6 +32,8 @@ import { analyzeVideoWithGemini, getMockAnalysis } from "@/services/geminiAPI"
 import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
 import { createAlertFromAnalysis, addAlerts } from "@/services/alertsService"
 import type { Veterinarian } from "@/services/locationAPI"
+import type { AnalysisResult } from "@/services/alertsService"
+import type { Pet } from "@/data/petData"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -44,18 +46,6 @@ const containerVariants = {
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
-}
-
-interface AnalysisResult {
-  behavior: string
-  confidence: number
-  mood: string
-  energy: string
-  recommendations: string[]
-  duration: string
-  uploadedAt: string
-  id?: number
-  fileName?: string
 }
 
 export default function Dashboard() {
@@ -138,13 +128,15 @@ export default function Dashboard() {
       // Generate alerts from analysis and save them
       if (user) {
         const petName = user.user_metadata?.petName || "Your Pet"
-        const currentPet = { 
+        const currentPet: Pet = { 
           id: user.id, 
           name: petName, 
           image: "🐾",
           breed: "Pet",
           age: 1,
-          weight: 0
+          type: (user.user_metadata?.petType || "dog") as "dog" | "cat" | "bird" | "rabbit",
+          mood: "happy" as const,
+          lastActivity: new Date().toISOString()
         }
         
         const generatedAlerts = createAlertFromAnalysis(result, currentPet)
@@ -410,8 +402,8 @@ export default function Dashboard() {
                   {uploadedVideos.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">No activity yet. Upload a video to get started!</p>
                   ) : (
-                    uploadedVideos.map((video) => (
-                      <div key={video.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    uploadedVideos.map((video, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="bg-blue-100 p-2 rounded">
                             <Video className="h-5 w-5 text-blue-600" />

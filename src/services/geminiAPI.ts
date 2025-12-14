@@ -7,7 +7,7 @@ export interface AnalysisResponse {
   behavior: string;
   confidence: number;
   mood: string;
-  energy: string;
+  energy: "Low" | "Medium" | "High";
   recommendations: string[];
   duration?: string;
 }
@@ -101,7 +101,7 @@ Format your response as JSON with keys: behavior, mood, energy, confidence, reco
  */
 export function getMockAnalysis(): AnalysisResponse {
   const moods = ["Happy", "Playful", "Calm", "Alert", "Curious"];
-  const energies = ["Low", "Medium", "High"];
+  const energies: ("Low" | "Medium" | "High")[] = ["Low", "Medium", "High"];
   const behaviors = [
     "Playful and energetic",
     "Calm and relaxed",

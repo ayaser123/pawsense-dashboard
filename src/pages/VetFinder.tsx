@@ -96,7 +96,7 @@ export default function VetFinder() {
     // Sort by distance
     updatedVets.sort((a, b) => a.distanceKm - b.distanceKm);
     setVets(updatedVets);
-  }, [showFromActualLocation, actualUserLocation]);
+  }, [showFromActualLocation, actualUserLocation, userLocation, vets]);
 
   // Handle location search
   const handleLocationSearch = async () => {

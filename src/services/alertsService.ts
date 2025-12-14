@@ -1,7 +1,17 @@
 // Alert management service - converts analysis to alerts and manages alert storage
 
-import type { AnalysisResult } from "@/pages/Dashboard";
 import type { Pet } from "@/data/petData";
+
+export interface AnalysisResult {
+  behavior: string;
+  confidence: number;
+  mood: string;
+  energy: "Low" | "Medium" | "High";
+  recommendations: string[];
+  duration: number;
+  uploadedAt: string;
+  fileName: string;
+}
 
 export interface Alert {
   id: string;

@@ -115,11 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuthContext() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error("useAuthContext must be used within AuthProvider")
-  return context
-}
-
 // Export AuthContext for use in other hooks
 export { AuthContext }
+
+// Note: useAuthContext hook is exported from useAuth hook to avoid fast refresh issues
