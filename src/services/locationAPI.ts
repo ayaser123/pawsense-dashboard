@@ -90,6 +90,38 @@ export async function getAddressFromCoordinates(
 }
 
 /**
+ * Search for coordinates by location name using OpenStreetMap Nominatim API
+ */
+export async function searchLocationByName(locationName: string): Promise<Location | null> {
+  try {
+    console.log(`🔍 Searching for location: "${locationName}"`);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}&format=json&limit=1`
+    );
+    const data = await response.json() as Array<{ lat: string; lon: string; address?: string; display_name?: string }>;
+    
+    if (data.length === 0) {
+      console.warn(`⚠️ Location not found: "${locationName}"`);
+      return null;
+    }
+
+    const result = data[0];
+    const location: Location = {
+      latitude: parseFloat(result.lat),
+      longitude: parseFloat(result.lon),
+      address: result.display_name || locationName,
+      city: locationName,
+    };
+    
+    console.log(`✅ Found location: ${location.address}`);
+    return location;
+  } catch (error) {
+    console.error("Location search error:", error);
+    return null;
+  }
+}
+
+/**
  * Search for nearby veterinarians - Real data only with expanded search radius
  */
 export async function searchNearbyVets(

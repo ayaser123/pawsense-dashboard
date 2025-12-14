@@ -25,12 +25,14 @@ import {
   Loader,
 } from "lucide-react";
 import { getUserLocation, searchNearbyVets } from "@/services/locationAPI";
+import { searchLocationByName } from "@/services/locationAPI";
 import type { Veterinarian } from "@/services/locationAPI";
 
 const specialties = ["All Specialties", "General Practice", "Emergency Care", "Surgery", "Dental"];
 
 export default function VetFinder() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
   const [specialty, setSpecialty] = useState("All Specialties");
   const [selectedVet, setSelectedVet] = useState<Veterinarian | null>(null);
   const [showBooking, setShowBooking] = useState(false);
@@ -71,6 +73,44 @@ export default function VetFinder() {
 
     loadVets();
   }, []);
+
+  // Handle location search
+  const handleLocationSearch = async () => {
+    if (!locationQuery.trim()) {
+      setError("Please enter a location");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log(`🔍 Searching for vets in: ${locationQuery}`);
+      const location = await searchLocationByName(locationQuery);
+      
+      if (!location) {
+        setError(`Location "${locationQuery}" not found. Please try another search.`);
+        setVets([]);
+        return;
+      }
+
+      setUserLocation({ lat: location.latitude, lng: location.longitude });
+      console.log(`📍 Location found:`, location);
+
+      const nearbyVets = await searchNearbyVets(location.latitude, location.longitude, 15);
+      console.log(`✅ Found ${nearbyVets.length} vets near ${locationQuery}`);
+
+      if (nearbyVets.length === 0) {
+        setError(`No veterinarians found near ${locationQuery}. Try searching a larger area or nearby city.`);
+      }
+
+      setVets(nearbyVets);
+    } catch (err) {
+      console.error("Error searching location:", err);
+      setError("Error searching location. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredVets = vets.filter((vet) => {
     const matchesSearch = vet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -114,34 +154,80 @@ export default function VetFinder() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="max-w-3xl mx-auto"
+              className="max-w-4xl mx-auto"
             >
               <Card variant="elevated" className="p-2">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by name or location..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 h-12 border-0 bg-secondary/50"
-                    />
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by city or address..."
+                        value={locationQuery}
+                        onChange={(e) => setLocationQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && handleLocationSearch()}
+                        className="pl-10 h-12 border-0 bg-secondary/50"
+                      />
+                    </div>
+                    <Button 
+                      variant="default" 
+                      size="lg" 
+                      className="h-12 px-8"
+                      onClick={handleLocationSearch}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Searching..." : "Search Location"}
+                    </Button>
                   </div>
-                  <Select value={specialty} onValueChange={setSpecialty}>
-                    <SelectTrigger className="w-full sm:w-48 h-12 border-0 bg-secondary/50">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {specialties.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="default" size="lg" className="h-12 px-8">
-                    <Locate className="h-4 w-4 mr-2" />
-                    Near Me
-                  </Button>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Filter results by vet name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 h-12 border-0 bg-secondary/50"
+                      />
+                    </div>
+                    <Select value={specialty} onValueChange={setSpecialty}>
+                      <SelectTrigger className="w-full sm:w-48 h-12 border-0 bg-secondary/50">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {specialties.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="h-12 px-8"
+                      onClick={async () => {
+                        setIsLoading(true);
+                        setError(null);
+                        try {
+                          const location = await getUserLocation();
+                          setUserLocation({ lat: location.latitude, lng: location.longitude });
+                          const nearbyVets = await searchNearbyVets(location.latitude, location.longitude, 15);
+                          setVets(nearbyVets);
+                          if (nearbyVets.length === 0) {
+                            setError("No veterinarians found near your location.");
+                          }
+                        } catch (err) {
+                          setError("Error getting your location.");
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      disabled={isLoading}
+                    >
+                      <Locate className="h-4 w-4 mr-2" />
+                      Near Me
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </motion.div>
