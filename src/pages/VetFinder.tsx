@@ -40,6 +40,7 @@ export default function VetFinder() {
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Load vets on mount
   useEffect(() => {
@@ -290,10 +291,13 @@ export default function VetFinder() {
                       >
                         <Card
                           variant="elevated"
-                          className={`cursor-pointer transition-all duration-300 ${
+                          className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
                             selectedVet?.lat === vet.lat && selectedVet?.lng === vet.lng ? "ring-2 ring-primary" : ""
                           }`}
-                          onClick={() => setSelectedVet(vet)}
+                          onClick={() => {
+                            setSelectedVet(vet);
+                            setShowDetails(true);
+                          }}
                         >
                           <CardContent className="p-6">
                             {/* Header */}
@@ -466,6 +470,172 @@ export default function VetFinder() {
                 Confirm Booking
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Vet Details Modal with Map */}
+      <AnimatePresence>
+        {showDetails && selectedVet && userLocation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowDetails(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="sticky top-0 bg-card border-b p-6 flex items-center justify-between z-10">
+                <h2 className="font-heading text-2xl font-bold text-foreground">Veterinary Details</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowDetails(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Header with name and rating */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success/20 to-success/5 flex items-center justify-center flex-shrink-0">
+                      <Stethoscope className="h-8 w-8 text-success" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-2xl font-bold text-foreground">{selectedVet.name}</h3>
+                      <p className="text-muted-foreground mb-2">{selectedVet.specialty || "General Practice"}</p>
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-medium">{selectedVet.rating?.toFixed(1) || "4.5"}</span>
+                        <span className="text-sm text-muted-foreground">(128 reviews)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                    selectedVet.open ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {selectedVet.open ? "Open Now" : "Closed"}
+                  </span>
+                </div>
+
+                {/* Distance Information */}
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Distance from you</p>
+                          <p className="font-bold text-lg text-foreground">{selectedVet.distance}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Navigation className="h-5 w-5 text-primary flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Your Location</p>
+                          <p className="font-medium text-foreground">{userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Map Placeholder */}
+                <div className="bg-muted rounded-xl overflow-hidden border">
+                  <div className="w-full h-80 bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center relative">
+                    <div className="text-center space-y-4">
+                      <MapPin className="h-12 w-12 text-primary mx-auto opacity-50" />
+                      <div>
+                        <p className="font-semibold text-foreground">Vet Location: {selectedVet.lat.toFixed(4)}, {selectedVet.lng.toFixed(4)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">Your Location: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Open in Google Maps to navigate →
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const mapsUrl = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${selectedVet.lat},${selectedVet.lng}`;
+                          window.open(mapsUrl, "_blank");
+                        }}
+                      >
+                        <Navigation className="h-4 w-4 mr-2" />
+                        Open in Google Maps
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-foreground">Contact Information</h4>
+                  {selectedVet.phone && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                      <Phone className="h-5 w-5 text-primary flex-shrink-0" />
+                      <a href={`tel:${selectedVet.phone}`} className="text-primary hover:underline">
+                        {selectedVet.phone}
+                      </a>
+                    </div>
+                  )}
+                  {selectedVet.address && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
+                      <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-foreground">Address</p>
+                        <p className="text-sm text-muted-foreground">{selectedVet.address}</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedVet.website && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                      <Award className="h-5 w-5 text-primary flex-shrink-0" />
+                      <a href={selectedVet.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (selectedVet.phone) {
+                        window.location.href = `tel:${selectedVet.phone}`;
+                      }
+                    }}
+                    disabled={!selectedVet.phone}
+                  >
+                    <Phone className="h-4 w-4 mr-2" />
+                    Call
+                  </Button>
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={() => {
+                      setShowDetails(false);
+                      setShowBooking(true);
+                    }}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Book
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
