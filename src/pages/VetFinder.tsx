@@ -66,11 +66,8 @@ export default function VetFinder() {
         setVets(nearbyVets);
       } catch (error) {
         console.warn("⚠️ VetFinder: Geolocation failed:", error);
-        setError(
-          error instanceof Error 
-            ? error.message 
-            : "Unable to get your location. Please search for your city to find nearby vets with accurate distances."
-        );
+        const errorMsg = error instanceof Error ? error.message : "Unable to get your location";
+        setError(errorMsg);
         // Don't load vets without valid location - distances would be wrong
         setVets([]);
       } finally {
@@ -253,26 +250,42 @@ export default function VetFinder() {
               </div>
             ) : error ? (
               <div className="py-12 text-center">
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-8 max-w-2xl mx-auto">
-                  <h3 className="font-semibold text-foreground mb-3">
-                    {error.includes("location") ? "📍 Location Required" : "No Veterinarians Found"}
-                  </h3>
-                  <p className="text-muted-foreground text-sm mb-6">{error}</p>
-                  {error.includes("location") && (
-                    <div className="bg-background rounded p-4 text-left text-sm text-muted-foreground space-y-3 mb-4">
-                      <p><strong>✅ Quick Fix:</strong> Use the search bar above to enter your city or location name.</p>
-                      <p className="text-xs"><strong>Example:</strong> Search for "Lahore", "Islamabad", "Karachi", or any city name to get accurate distances from your location.</p>
-                      <p className="text-xs"><strong>📌 Note:</strong> This ensures all distance calculations are accurate from your actual location, not a default location.</p>
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-8 max-w-2xl mx-auto">
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <MapPin className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-semibold text-foreground text-lg">Search Your Location</h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm mb-8">{error}</p>
+                  
+                  <div className="bg-background dark:bg-slate-900 rounded p-6 text-left text-sm space-y-4 mb-6 border border-blue-200 dark:border-blue-800">
+                    <div className="flex gap-3">
+                      <div className="text-2xl">1️⃣</div>
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">Enter your city in the search bar above</p>
+                        <p className="text-xs text-muted-foreground">Example: "Lahore", "Islamabad", "Karachi"</p>
+                      </div>
                     </div>
-                  )}
-                  {!error.includes("location") && (
-                    <div className="bg-background rounded p-4 text-left text-xs text-muted-foreground space-y-3 mb-4">
-                      <p><strong>📌 Note:</strong> PawSense uses real, verified data from OpenStreetMap - the world's largest open database of locations.</p>
-                      <p><strong>🏥 Limited Coverage:</strong> Some regions may have incomplete veterinary clinic listings on OpenStreetMap.</p>
-                      <p><strong>🤝 Help Improve:</strong> You can add missing veterinary clinics at <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openstreetmap.org</a></p>
-                      <p><strong>💡 Tip:</strong> Try searching nearby cities or larger regions to find available vets.</p>
+                    
+                    <div className="flex gap-3">
+                      <div className="text-2xl">2️⃣</div>
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">Click "Search Location"</p>
+                        <p className="text-xs text-muted-foreground">This finds your city's coordinates</p>
+                      </div>
                     </div>
-                  )}
+                    
+                    <div className="flex gap-3">
+                      <div className="text-2xl">3️⃣</div>
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">See vets with accurate distances</p>
+                        <p className="text-xs text-muted-foreground">All distances calculated from your location</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    <strong>💡 Why?</strong> This ensures all distance calculations are accurate from your actual location, not a default one.
+                  </p>
                 </div>
               </div>
             ) : (

@@ -24,19 +24,27 @@ export interface Veterinarian {
 
 /**
  * Get user's current location using browser's Geolocation API
- * Throws an error if geolocation fails - user must search for location manually
+ * Returns a promise that tries to get actual location, with timeout for manual search fallback
  */
 export async function getUserLocation(): Promise<Location> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       console.warn("⚠️  Geolocation not supported by browser");
-      reject(new Error("Geolocation not supported by browser. Please search for your location manually."));
+      reject(new Error("Geolocation not available. Please use the search bar to find your location for accurate distance calculations."));
       return;
     }
 
     console.log("📍 Requesting user geolocation...");
+    
+    // Set a timeout - if geolocation takes too long, reject and ask user to search
+    const timeoutId = setTimeout(() => {
+      console.warn("⚠️  Geolocation timeout - user should search for location manually");
+      reject(new Error("Location detection is taking too long. Please search for your city/location in the search bar above to ensure accurate distances."));
+    }, 5000); // 5 second timeout
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        clearTimeout(timeoutId);
         console.log("✅ Got user location:", position.coords.latitude, position.coords.longitude);
         resolve({
           latitude: position.coords.latitude,
@@ -44,9 +52,10 @@ export async function getUserLocation(): Promise<Location> {
         });
       },
       (error) => {
+        clearTimeout(timeoutId);
         console.warn("⚠️  Geolocation error:", error.message);
         // Don't fallback - let user search manually so distances are accurate
-        reject(new Error(`Unable to get your location: ${error.message}. Please search for your city/location manually to ensure accurate distance calculations.`));
+        reject(new Error(`Location permission denied or unavailable. Please search for your city/location in the search bar to get accurate distances.`));
       }
     );
   });
