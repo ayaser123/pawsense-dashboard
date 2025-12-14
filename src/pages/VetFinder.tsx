@@ -65,8 +65,14 @@ export default function VetFinder() {
         
         setVets(nearbyVets);
       } catch (error) {
-        console.error("❌ VetFinder: Error loading vets:", error);
-        setError("Unable to load veterinarians. Please try again later.");
+        console.warn("⚠️ VetFinder: Geolocation failed:", error);
+        setError(
+          error instanceof Error 
+            ? error.message 
+            : "Unable to get your location. Please search for your city to find nearby vets with accurate distances."
+        );
+        // Don't load vets without valid location - distances would be wrong
+        setVets([]);
       } finally {
         setIsLoading(false);
       }
@@ -247,15 +253,26 @@ export default function VetFinder() {
               </div>
             ) : error ? (
               <div className="py-12 text-center">
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-8 max-w-xl mx-auto">
-                  <h3 className="font-semibold text-foreground mb-3">Limited Veterinarians Available</h3>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-8 max-w-2xl mx-auto">
+                  <h3 className="font-semibold text-foreground mb-3">
+                    {error.includes("location") ? "📍 Location Required" : "No Veterinarians Found"}
+                  </h3>
                   <p className="text-muted-foreground text-sm mb-6">{error}</p>
-                  <div className="bg-background rounded p-4 text-left text-xs text-muted-foreground space-y-3 mb-4">
-                    <p><strong>📌 Note:</strong> PawSense uses real, verified data from OpenStreetMap - the world's largest open database of locations.</p>
-                    <p><strong>🏥 Limited Coverage:</strong> Some regions may have incomplete veterinary clinic listings on OpenStreetMap.</p>
-                    <p><strong>🤝 Help Improve:</strong> You can add missing veterinary clinics at <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openstreetmap.org</a></p>
-                    <p><strong>💡 Tip:</strong> Try searching nearby cities or larger regions to find available vets.</p>
-                  </div>
+                  {error.includes("location") && (
+                    <div className="bg-background rounded p-4 text-left text-sm text-muted-foreground space-y-3 mb-4">
+                      <p><strong>✅ Quick Fix:</strong> Use the search bar above to enter your city or location name.</p>
+                      <p className="text-xs"><strong>Example:</strong> Search for "Lahore", "Islamabad", "Karachi", or any city name to get accurate distances from your location.</p>
+                      <p className="text-xs"><strong>📌 Note:</strong> This ensures all distance calculations are accurate from your actual location, not a default location.</p>
+                    </div>
+                  )}
+                  {!error.includes("location") && (
+                    <div className="bg-background rounded p-4 text-left text-xs text-muted-foreground space-y-3 mb-4">
+                      <p><strong>📌 Note:</strong> PawSense uses real, verified data from OpenStreetMap - the world's largest open database of locations.</p>
+                      <p><strong>🏥 Limited Coverage:</strong> Some regions may have incomplete veterinary clinic listings on OpenStreetMap.</p>
+                      <p><strong>🤝 Help Improve:</strong> You can add missing veterinary clinics at <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openstreetmap.org</a></p>
+                      <p><strong>💡 Tip:</strong> Try searching nearby cities or larger regions to find available vets.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

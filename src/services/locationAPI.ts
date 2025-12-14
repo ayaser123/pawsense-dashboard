@@ -24,17 +24,13 @@ export interface Veterinarian {
 
 /**
  * Get user's current location using browser's Geolocation API
+ * Throws an error if geolocation fails - user must search for location manually
  */
 export async function getUserLocation(): Promise<Location> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      console.warn("⚠️  Geolocation not supported by browser, using Islamabad fallback");
-      resolve({
-        latitude: 33.6844,
-        longitude: 74.3355,
-        city: "Islamabad",
-        error: "Geolocation not supported by browser",
-      });
+      console.warn("⚠️  Geolocation not supported by browser");
+      reject(new Error("Geolocation not supported by browser. Please search for your location manually."));
       return;
     }
 
@@ -48,14 +44,9 @@ export async function getUserLocation(): Promise<Location> {
         });
       },
       (error) => {
-        console.warn("⚠️  Geolocation error:", error.message, "Using Islamabad fallback");
-        // Fallback to Islamabad coordinates if user denies location
-        resolve({
-          latitude: 33.6844,
-          longitude: 74.3355,
-          city: "Islamabad",
-          error: `Geolocation error: ${error.message}. Using Islamabad as fallback.`,
-        });
+        console.warn("⚠️  Geolocation error:", error.message);
+        // Don't fallback - let user search manually so distances are accurate
+        reject(new Error(`Unable to get your location: ${error.message}. Please search for your city/location manually to ensure accurate distance calculations.`));
       }
     );
   });
