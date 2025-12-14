@@ -158,6 +158,7 @@ export default function VetFinder() {
             >
               <Card variant="elevated" className="p-2">
                 <div className="flex flex-col gap-2">
+                  {/* Location Search Row */}
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="relative flex-1">
                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -178,29 +179,6 @@ export default function VetFinder() {
                     >
                       {isLoading ? "Searching..." : "Search Location"}
                     </Button>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Filter results by vet name..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 h-12 border-0 bg-secondary/50"
-                      />
-                    </div>
-                    <Select value={specialty} onValueChange={setSpecialty}>
-                      <SelectTrigger className="w-full sm:w-48 h-12 border-0 bg-secondary/50">
-                        <Filter className="h-4 w-4 mr-2" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {specialties.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <Button 
                       variant="outline" 
                       size="lg" 
@@ -227,6 +205,30 @@ export default function VetFinder() {
                       <Locate className="h-4 w-4 mr-2" />
                       Near Me
                     </Button>
+                  </div>
+                  
+                  {/* Filter Row */}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Filter results by vet name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 h-12 border-0 bg-secondary/50"
+                      />
+                    </div>
+                    <Select value={specialty} onValueChange={setSpecialty}>
+                      <SelectTrigger className="w-full sm:w-48 h-12 border-0 bg-secondary/50">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {specialties.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </Card>
