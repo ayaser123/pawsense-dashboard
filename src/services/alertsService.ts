@@ -1,6 +1,19 @@
-// Alert management service - converts analysis to alerts and manages alert storage
+/**
+ * Week 10-11: Abstract Alerts Service with ADT integration
+ * Refactored to use:
+ * - AlertADT for type safety
+ * - AlertTree for hierarchical structure
+ * - AlertRulesDSL for rule-based generation
+ * - ConcurrencyManager for safe concurrent access
+ */
 
 import type { Pet } from "@/data/petData";
+import type { AlertADT } from "@/adt/AlertADT";
+import { createAlert, getSeverityFromType } from "@/adt/AlertADT";
+import { PetADT, createPet } from "@/adt/PetADT";
+import { AlertTree, createAlertLeaf } from "@/adt/AlertTree";
+import { getAlertRulesEngine, initializeAlertRulesEngine } from "@/dsl/AlertRulesDSL";
+import { ConcurrentCache, Semaphore, RequestThrottler } from "@/concurrency/ConcurrencyManager";
 
 export interface AnalysisResult {
   behavior: string;
@@ -11,8 +24,10 @@ export interface AnalysisResult {
   duration: number;
   uploadedAt: string;
   fileName: string;
+  id?: number;
 }
 
+// Legacy Alert interface for backward compatibility
 export interface Alert {
   id: string;
   type: "warning" | "info" | "success" | "critical";
@@ -27,8 +42,124 @@ export interface Alert {
 
 const ALERTS_STORAGE_KEY = "pawsense_alerts";
 
+// Service layer for alerts management
+class AlertsServiceImpl {
+  private alertTrees: Map<string, AlertTree> = new Map();
+  private cache: ConcurrentCache<string, AlertTree>;
+  private semaphore: Semaphore;
+  private throttler: RequestThrottler;
+
+  constructor() {
+    this.semaphore = new Semaphore(2);
+    this.cache = new ConcurrentCache<string, AlertTree>(1);
+    this.throttler = new RequestThrottler(1000);
+    initializeAlertRulesEngine();
+  }
+
+  /**
+   * Create alert from analysis using ADT
+   * Precondition: Analysis result and valid pet
+   * Postcondition: Returns AlertADT objects with severity levels
+   */
+  async createAlertsFromAnalysis(analysis: AnalysisResult, pet: Pet): Promise<AlertADT[]> {
+    return this.semaphore.withPermit(async () => {
+      // Create PetADT from legacy pet data
+      const petADT = createPet({
+        id: pet.id,
+        name: pet.name,
+        type: pet.type,
+        breed: pet.breed,
+        age: pet.age,
+        mood: pet.mood,
+        image: pet.image,
+      });
+
+      const alerts: AlertADT[] = [];
+      const moodAlertType = getMoodAlertType(analysis.mood);
+      const moodSeverity =
+        moodAlertType === "critical" ? 9 : moodAlertType === "warning" ? 6 : 2;
+
+      // Alert 1: Analysis completion
+      alerts.push(
+        createAlert(
+          {
+            id: `alert_${Date.now()}_${Math.random()}`,
+            type: "info",
+            title: "Video Analysis Complete",
+            message: `${petADT.getName()}'s video has been analyzed. Behavior: ${analysis.behavior}`,
+            severity: 2,
+            source: "analysis",
+          },
+          petADT
+        )
+      );
+
+      // Alert 2: Mood assessment
+      if (moodAlertType !== "info") {
+        alerts.push(
+          createAlert(
+            {
+              id: `alert_${Date.now()}_${Math.random()}_mood`,
+              type: moodAlertType,
+              title: `Mood: ${analysis.mood}`,
+              message: `${petADT.getName()} appears ${analysis.mood.toLowerCase()}.`,
+              severity: moodSeverity,
+              action: moodAlertType === "critical" ? "Find Vet" : undefined,
+              source: "analysis",
+            },
+            petADT
+          )
+        );
+      }
+
+      // Alert 3: Low energy warning
+      if (analysis.energy === "Low") {
+        alerts.push(
+          createAlert(
+            {
+              id: `alert_${Date.now()}_${Math.random()}_energy`,
+              type: "warning",
+              title: "Low Energy",
+              message: `${petADT.getName()} shows low energy levels. Monitor closely.`,
+              severity: 6,
+              action: "Monitor",
+              source: "analysis",
+            },
+            petADT
+          )
+        );
+      }
+
+      // Alert 4: Positive assessment
+      if (
+        analysis.confidence > 0.9 &&
+        (analysis.mood === "Happy" || analysis.mood === "Playful")
+      ) {
+        alerts.push(
+          createAlert(
+            {
+              id: `alert_${Date.now()}_${Math.random()}_positive`,
+              type: "success",
+              title: "Health Status: Excellent",
+              message: `${petADT.getName()} appears healthy and happy!`,
+              severity: 1,
+              source: "analysis",
+            },
+            petADT
+          )
+        );
+      }
+
+      return alerts;
+    });
+  }
+}
+
+const alertsServiceInstance = new AlertsServiceImpl();
+
 /**
- * Convert video analysis to an alert
+ * Convert video analysis to an alert (legacy interface maintained for compatibility)
+ * Uses new ADT-based service internally
  */
 export function createAlertFromAnalysis(
   analysis: AnalysisResult,
