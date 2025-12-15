@@ -15,4 +15,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000, // Suppress chunk size warnings (expected for large React apps)
+  },
 }));
