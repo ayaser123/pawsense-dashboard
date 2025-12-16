@@ -182,7 +182,7 @@ async function searchVetsViaOverpass(
     const response = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: query,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      headers: { 'Content-Type': 'application/osm3s+xml' }
     });
 
     if (!response.ok) {
