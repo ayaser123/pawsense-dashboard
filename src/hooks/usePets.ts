@@ -4,24 +4,21 @@ import apiClient from '@/lib/api';
 
 export interface Pet {
   id: string;
-  owner_id: string;
+  user_id: string;
   name: string;
   species: 'dog' | 'cat' | 'bird' | 'rabbit' | 'hamster' | 'other';
   breed?: string;
   age?: number;
-  weight?: number;
-  color?: string;
-  medical_info?: string;
+  gender?: string;
   created_at: string;
   updated_at: string;
-  image_emoji?: string;
 }
 
 interface UsePetsResult {
   pets: Pet[];
   loading: boolean;
   error: string | null;
-  addPet: (pet: Omit<Pet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<Pet | null>;
+  addPet: (pet: Omit<Pet, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Pet | null>;
   updatePet: (id: string, updates: Partial<Pet>) => Promise<Pet | null>;
   deletePet: (id: string) => Promise<boolean>;
   refetch: () => Promise<void>;
@@ -60,12 +57,20 @@ export function usePets(): UsePetsResult {
   const addPet = async (petData: Omit<Pet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>): Promise<Pet | null> => {
     try {
       setError(null);
+      console.log("[usePets] Adding pet with data:", petData);
       const response = await apiClient.post('/api/pets', petData);
+      console.log("[usePets] Pet added successfully, response:", response.data);
       setPets([...pets, response.data]);
       return response.data;
     } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { error?: string } }; message?: string };
+      const apiErr = err as { response?: { data?: { error?: string; details?: string; code?: string } }; message?: string };
       const errorMsg = apiErr.response?.data?.error || 'Failed to add pet';
+      console.error("[usePets] Error adding pet:", {
+        message: errorMsg,
+        details: apiErr.response?.data?.details,
+        code: apiErr.response?.data?.code,
+        fullError: err
+      });
       setError(errorMsg);
       return null;
     }

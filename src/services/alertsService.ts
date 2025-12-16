@@ -21,7 +21,7 @@ export interface AnalysisResult {
   mood: string;
   energy: "Low" | "Medium" | "High";
   recommendations: string[];
-  duration: number;
+  duration: string;
   uploadedAt: string;
   fileName: string;
   id?: number;
@@ -77,7 +77,7 @@ class AlertsServiceImpl {
         breed: pet.breed || "Unknown",
         age: pet.age || 0,
         mood: "happy",
-        image: pet.image_emoji || "🐾",
+        image: "🐾",
       });
 
       const alerts: AlertADT[] = [];

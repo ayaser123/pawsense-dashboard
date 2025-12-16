@@ -8,10 +8,8 @@ import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { AddPetDialog } from "@/components/dashboard/AddPetDialog"
 import { PetSelector } from "@/components/dashboard/PetSelector"
-import { ImageUpload } from "@/components/dashboard/ImageUpload"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert as AlertUI, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -20,12 +18,9 @@ import {
   Activity, 
   Clock, 
   Zap,
-  TrendingUp,
-  Settings,
   AlertCircle,
   CheckCircle,
   Video,
-  Camera,
   BarChart3,
   Shield,
   Calendar,
@@ -36,7 +31,7 @@ import {
   Sparkles
 } from "lucide-react"
 import { motion } from "framer-motion"
-import { analyzeVideoWithGemini, getMockAnalysis } from "@/services/geminiAPI"
+import { analyzeVideoWithGemini } from "@/services/geminiAPI"
 import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
 import { createAlertFromAnalysis, addAlerts, loadAlerts, deleteAlert } from "@/services/alertsService"
 import type { Veterinarian } from "@/services/locationAPI"
@@ -63,9 +58,6 @@ export default function Dashboard() {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
-  const [activeTab, setActiveTab] = useState("overview")
-  const [nearbyVets, setNearbyVets] = useState<Veterinarian[]>([])
-  const [isLoadingVets, setIsLoadingVets] = useState(false)
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [alerts, setAlerts] = useState<Alert[]>([])
 
@@ -80,29 +72,6 @@ export default function Dashboard() {
   useEffect(() => {
     const loadedAlerts = loadAlerts()
     setAlerts(loadedAlerts)
-  }, [])
-
-  useEffect(() => {
-    const loadVets = async () => {
-      setIsLoadingVets(true)
-      try {
-        const location = await getUserLocation()
-        if (location.latitude && location.longitude) {
-          const vets = await searchNearbyVets(location.latitude, location.longitude, 10)
-          setNearbyVets(vets)
-        } else {
-          // No location available, skip loading vets
-          setNearbyVets([])
-        }
-      } catch (error) {
-        console.error("Error loading vets:", error)
-        setNearbyVets([])
-      } finally {
-        setIsLoadingVets(false)
-      }
-    }
-
-    loadVets()
   }, [])
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,16 +95,8 @@ export default function Dashboard() {
     setIsAnalyzing(true)
     
     try {
-      // Try to use Gemini API, fallback to mock if not available
-      let analysis
-      try {
-        analysis = await analyzeVideoWithGemini(videoFile)
-      } catch (error) {
-        console.warn("Gemini API unavailable, using mock analysis:", error)
-        // Simulate analysis delay with mock
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        analysis = getMockAnalysis()
-      }
+      console.log("[DASHBOARD] Starting video analysis...")
+      const analysis = await analyzeVideoWithGemini(videoFile)
       
       const result: AnalysisResult = {
         ...analysis,
@@ -157,7 +118,8 @@ export default function Dashboard() {
         console.log(`✅ Created ${generatedAlerts.length} alerts from analysis`)
       }
       
-      setVideoFile(null)
+      // Keep video visible after analysis (commented out below)
+      // setVideoFile(null)
     } catch (error) {
       console.error("Analysis error:", error)
       alert("Failed to analyze video. Please try again.")
@@ -391,396 +353,125 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* Tabs Section */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="video">
-              <Video className="h-4 w-4 mr-2" />
-              Video Analysis
-            </TabsTrigger>
-            <TabsTrigger value="health">
-              <Heart className="h-4 w-4 mr-2" />
-              Health
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Account Info */}
-              <Card className="lg:col-span-2">
+        {/* Video Analysis Section */}
+        <div className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Video Upload Component */}
+            <div className="lg:col-span-2">
+              <Card>
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Account Overview
+                    <Upload className="h-5 w-5" />
+                    Upload Pet Video
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="flex justify-between items-center pb-4 border-b">
-                    <span className="text-muted-foreground">Email Address</span>
-                    <span className="font-semibold text-gray-900">{user?.email}</span>
-                  </div>
-                  <div className="flex justify-between items-center pb-4 border-b">
-                    <span className="text-muted-foreground">Full Name</span>
-                    <span className="font-semibold">{user?.user_metadata?.full_name || "Not set"}</span>
-                  </div>
-                  <div className="flex justify-between items-center pb-4 border-b">
-                    <span className="text-muted-foreground">Member Since</span>
-                    <span className="font-semibold">Dec 2025</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Account Status</span>
-                    <Badge>Active</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="text-base">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-3">
-                  <input
-                    type="file"
-                    id="photo-upload"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        alert(`Photo selected: ${file.name}`);
-                      }
-                    }}
-                  />
-                  <Button 
-                    className="w-full"
-                    onClick={() => document.getElementById('photo-upload')?.click()}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Upload Photo
-                  </Button>
-
-                  <input
-                    type="file"
-                    id="video-upload"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setVideoFile(file);
-                        setActiveTab('video');
-                      }
-                    }}
-                  />
-                  <Button 
-                    className="w-full"
-                    onClick={() => document.getElementById('video-upload')?.click()}
-                  >
-                    <Video className="h-4 w-4 mr-2" />
-                    Upload Video
-                  </Button>
-
-                  <Button 
-                    className="w-full"
-                    onClick={() => window.location.href = '/vet-finder'}
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Find Vets
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {uploadedVideos.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No activity yet. Upload a video to get started!</p>
-                  ) : (
-                    uploadedVideos.map((video, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-primary/10 p-2 rounded">
-                            <Video className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-semibold">{video.fileName}</p>
-                            <p className="text-sm text-muted-foreground">{video.uploadedAt}</p>
-                          </div>
-                        </div>
-                        <Badge>{Math.round(video.confidence * 100)}% Confidence</Badge>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Video Analysis Tab */}
-          <TabsContent value="video" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Upload Component */}
-              <div className="lg:col-span-2">
-                <ImageUpload 
-                  onImageSelect={(file) => setVideoFile(file)}
-                  petId={selectedPet?.id}
-                />
-              </div>
-
-              {/* Analysis Results */}
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="text-base">Latest Analysis</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-2">Select a video to analyze your pet's behavior</p>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  {analysisResult ? (
-                    <div className="space-y-4">
-                      <div className="p-3 bg-muted rounded-lg border border-input">
-                        <p className="text-xs font-semibold">MOOD</p>
-                        <p className="text-2xl font-bold text-primary mt-1">{analysisResult.mood}</p>
-                      </div>
-                      <div className="p-3 bg-muted rounded-lg border border-input">
-                        <p className="text-xs font-semibold">CONFIDENCE</p>
-                        <p className="text-2xl font-bold text-primary mt-1">{Math.round(analysisResult.confidence * 100)}%</p>
-                      </div>
-                      <div className="p-3 bg-muted rounded-lg border border-input">
-                        <p className="text-xs font-semibold">ENERGY LEVEL</p>
-                        <p className="text-lg font-bold text-primary mt-1">{analysisResult.energy}</p>
-                      </div>
-                      <div className="pt-4 border-t">
-                        <p className="text-xs font-semibold mb-2">RECOMMENDATIONS</p>
-                        <ul className="space-y-2">
-                          {analysisResult.recommendations.map((rec: string, i: number) => (
-                            <li key={i} className="text-sm flex gap-2">
-                              <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                              {rec}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 hover:border-primary/60 transition-colors">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoUpload}
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label htmlFor="video-upload" className="cursor-pointer block">
+                        <div className="text-center">
+                          <Video className="h-12 w-12 text-muted mx-auto mb-3" />
+                          <p className="font-semibold">Click to select or drag and drop</p>
+                          <p className="text-sm text-muted-foreground mt-1">MP4, WebM, or any video format</p>
+                        </div>
+                      </label>
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Video className="h-12 w-12 text-muted mx-auto mb-3" />
-                      <p className="text-muted-foreground text-sm">Upload and analyze a video to see results</p>
-                    </div>
-                  )}
+                    
+                    {videoFile && (
+                      <div className="space-y-3">
+                        {/* Video Preview */}
+                        <div className="relative bg-black rounded-lg overflow-hidden">
+                          <video
+                            src={URL.createObjectURL(videoFile)}
+                            controls
+                            className="w-full h-48 object-cover"
+                          />
+                          <div className="absolute top-2 right-2 bg-primary/90 text-white px-2 py-1 rounded text-xs font-semibold">
+                            {(videoFile.size / 1024 / 1024).toFixed(1)}MB
+                          </div>
+                        </div>
+                        
+                        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                          <p className="text-sm font-medium">📹 {videoFile.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Ready to analyze
+                          </p>
+                        </div>
+                        <Button
+                          onClick={handleAnalyzeVideo}
+                          disabled={isAnalyzing}
+                          className="w-full"
+                          size="lg"
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <Loader className="h-4 w-4 mr-2 animate-spin" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Analyze Video
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
 
-          {/* Health Tab */}
-          <TabsContent value="health" className="space-y-6 mt-6">
+            {/* Analysis Results */}
             <Card>
               <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="h-5 w-5" />
-                  Health Metrics
-                </CardTitle>
+                <CardTitle className="text-base">Latest Analysis</CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 bg-muted rounded-lg border border-input">
-                    <p className="text-sm font-semibold">Heart Rate</p>
-                    <p className="text-3xl font-bold text-primary mt-2">78 BPM</p>
-                    <p className="text-xs text-muted-foreground mt-2">Normal range</p>
+                {analysisResult ? (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-muted rounded-lg border border-input">
+                      <p className="text-xs font-semibold">MOOD</p>
+                      <p className="text-2xl font-bold text-primary mt-1">{analysisResult.mood}</p>
+                    </div>
+                    <div className="p-3 bg-muted rounded-lg border border-input">
+                      <p className="text-xs font-semibold">CONFIDENCE</p>
+                      <p className="text-2xl font-bold text-primary mt-1">{Math.round(analysisResult.confidence * 100)}%</p>
+                    </div>
+                    <div className="p-3 bg-muted rounded-lg border border-input">
+                      <p className="text-xs font-semibold">ENERGY LEVEL</p>
+                      <p className="text-lg font-bold text-primary mt-1">{analysisResult.energy}</p>
+                    </div>
+                    <div className="pt-4 border-t">
+                      <p className="text-xs font-semibold mb-2">RECOMMENDATIONS</p>
+                      <ul className="space-y-2">
+                        {analysisResult.recommendations.map((rec: string, i: number) => (
+                          <li key={i} className="text-sm flex gap-2">
+                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            {rec}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div className="p-4 bg-muted rounded-lg border border-input">
-                    <p className="text-sm font-semibold">Temperature</p>
-                    <p className="text-3xl font-bold text-primary mt-2">38.5°C</p>
-                    <p className="text-xs text-muted-foreground mt-2">Healthy</p>
-                  </div>
-                  <div className="p-4 bg-muted rounded-lg border border-input">
-                    <p className="text-sm font-semibold">Hydration</p>
-                    <p className="text-3xl font-bold text-primary mt-2">85%</p>
-                    <p className="text-xs text-muted-foreground mt-2">Well hydrated</p>
-                  </div>
-                  <div className="p-4 bg-muted rounded-lg border border-input">
-                    <p className="text-sm font-semibold">Nutrition</p>
-                    <p className="text-3xl font-bold text-primary mt-2">92%</p>
-                    <p className="text-xs text-muted-foreground mt-2">Excellent</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Health Alerts */}
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="text-base">Health Alerts</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-3">
-                {alerts.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No alerts yet. Upload a video for AI analysis to generate health alerts.
-                  </p>
                 ) : (
-                  alerts.map((alert) => {
-                    const iconColor =
-                      alert.type === "critical" || alert.type === "warning"
-                        ? "text-destructive"
-                        : alert.type === "success"
-                          ? "text-primary"
-                          : "text-primary"
-                    
-                    const alertIcon =
-                      alert.type === "critical" || alert.type === "warning" ? (
-                        <AlertCircle className={`h-4 w-4 ${iconColor}`} />
-                      ) : (
-                        <CheckCircle className={`h-4 w-4 ${iconColor}`} />
-                      )
-
-                    return (
-                      <div key={alert.id} className="flex items-start gap-3 p-3 bg-muted rounded-lg border border-input">
-                        {alertIcon}
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">{alert.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{alert.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(alert.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            deleteAlert(alert.id)
-                            setAlerts(alerts.filter(a => a.id !== alert.id))
-                          }}
-                          className="text-muted-foreground hover:text-foreground transition"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )
-                  })
+                  <div className="text-center py-8">
+                    <Video className="h-12 w-12 text-muted mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">Upload and analyze a video to see results</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6 mt-6">
-            {/* Nearby Vets */}
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="h-5 w-5" />
-                  Nearby Veterinarians
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {isLoadingVets ? (
-                  <div className="text-center py-8">
-                    <Loader className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-                    <p className="text-muted-foreground">Loading nearby vets...</p>
-                  </div>
-                ) : nearbyVets.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No veterinarians found. Showing mock data.</p>
-                ) : null}
-                <div className="space-y-3">
-                  {nearbyVets.map((vet, i) => (
-                    <div key={i} className="p-4 border border-input rounded-lg hover:border-primary transition">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="font-semibold">{vet.name}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{vet.address}</p>
-                          {vet.phone && (
-                            <p className="text-sm text-muted-foreground">{vet.phone}</p>
-                          )}
-                          {vet.website && (
-                            <a 
-                              href={vet.website} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline"
-                            >
-                              {vet.website}
-                            </a>
-                          )}
-                        </div>
-                        <div className="text-right ml-4">
-                          <Badge variant={vet.open ? "default" : "secondary"}>
-                            {vet.open ? "Open" : "Closed"}
-                          </Badge>
-                          <p className="text-sm font-semibold text-muted-foreground mt-2">{vet.distance}</p>
-                          {vet.rating && (
-                            <p className="text-sm font-semibold">⭐ {vet.rating}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Settings & Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Notifications</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span>Health Alerts</span>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 rounded" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span>Activity Updates</span>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 rounded" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span>Vet Reminders</span>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 rounded" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6 space-y-4">
-                  <h3 className="font-semibold">Privacy</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span>Share Activity Data</span>
-                      <input type="checkbox" className="w-4 h-4 rounded" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span>Public Profile</span>
-                      <input type="checkbox" className="w-4 h-4 rounded" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <Button variant="destructive" className="w-full">
-                    Sign Out
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </main>
 
       <Footer />

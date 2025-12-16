@@ -12,7 +12,6 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import VetFinder from "@/pages/VetFinder";
-import Telehealth from "@/pages/Telehealth";
 import Alerts from "@/pages/Alerts";
 import Contact from "@/pages/Contact";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -39,7 +38,6 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/vet-finder" element={<ProtectedRoute><VetFinder /></ProtectedRoute>} />
-        <Route path="/telehealth" element={<ProtectedRoute><Telehealth /></ProtectedRoute>} />
         <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
         <Route path="/contact" element={<Contact />} />
         <Route path="*" element={<NotFound />} />

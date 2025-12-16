@@ -100,10 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Query the auth.users table to check if email exists
       // We use the admin API endpoint which is safe since we're checking from frontend
-      const { data, error } = await supabase.auth.admin.listUsers() as any
+      const { data, error } = await supabase.auth.admin.listUsers() as { data?: { users: Array<{ email?: string }> }; error?: unknown }
       
       if (!error && data?.users) {
-        return data.users.some((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+        return data.users.some((u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase())
       }
       
       // Fallback: Try to sign up with the email - if it returns "already registered", email exists

@@ -1,9 +1,15 @@
 import express from "express";
 import cors from "cors";
 import { randomUUID } from "crypto";
+import { createClient } from "@supabase/supabase-js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL || "https://lkkjkomyzsbrxttwsupk.supabase.co";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra2prb215enNicnh0dHdzdXBrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDk5NTU1MSwiZXhwIjoyMDgwNTcxNTUxfQ.CMbWLvn_gc97b0w3d2vV9aEmMijMRZRlXziG881iDMc";
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Basic middleware
 app.use(
@@ -91,11 +97,6 @@ app.post("/auth/logout", (req, res) => {
   const { email } = req.body || {};
   console.log("[AUTH] Logout:", { email });
   return res.status(200).json({ success: true });
-});
-
-// Fallback
-app.use((req, res) => {
-  res.status(404).json({ error: "Not found", path: req.path });
 });
 
 // --- Location & Maps endpoints ---
@@ -249,17 +250,29 @@ app.get("/api/activity/:petId", (req, res) => {
 });
 
 // --- Pet Management Endpoints ---
-// Mock database for pets (in-memory storage)
-const petDatabase = new Map();
-
 // GET all pets for authenticated user
-app.get("/api/pets", (req, res) => {
+app.get("/api/pets", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] || "default-user";
-    const userPets = Array.from(petDatabase.values()).filter(p => p.owner_id === userId);
+    const userId = req.headers["x-user-id"];
     
-    console.log("[PETS] Retrieved pets for user:", { userId, count: userPets.length });
-    return res.status(200).json(userPets);
+    if (!userId) {
+      console.log("[PETS] No user ID provided");
+      return res.status(401).json({ error: "Unauthorized - no user ID" });
+    }
+
+    const { data, error } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("[PETS] Supabase error:", error);
+      return res.status(500).json({ error: "Failed to fetch pets" });
+    }
+
+    console.log("[PETS] Retrieved pets for user:", { userId, count: data?.length || 0 });
+    return res.status(200).json(data || []);
   } catch (err) {
     console.error("[PETS] Get pets error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -267,53 +280,87 @@ app.get("/api/pets", (req, res) => {
 });
 
 // POST add new pet
-app.post("/api/pets", (req, res) => {
+app.post("/api/pets", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] || "default-user";
-    const { name, species, breed, age, weight, color, image_emoji, medical_info } = req.body;
+    const userId = req.headers["x-user-id"];
+    const { name, species, breed, age, gender } = req.body;
+
+    console.log("[PETS] Add request - userId:", userId, "name:", name, "species:", species);
+
+    if (!userId) {
+      console.log("[PETS] No user ID provided");
+      return res.status(401).json({ error: "Unauthorized - no user ID" });
+    }
 
     // Validate required fields
     if (!name || !species) {
+      console.log("[PETS] Validation failed - missing name or species");
       return res.status(400).json({ error: "Pet name and species are required" });
     }
 
     const petId = randomUUID();
     const newPet = {
       id: petId,
-      owner_id: userId,
+      user_id: userId,
       name,
       species,
       breed: breed || null,
       age: age ? parseInt(age) : null,
-      weight: weight ? parseFloat(weight) : null,
-      color: color || null,
-      image_emoji: image_emoji || "🐾",
-      medical_info: medical_info || null,
+      gender: gender || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    petDatabase.set(petId, newPet);
-    console.log("[PETS] New pet added:", { petId, name, species, userId });
+    console.log("[PETS] Inserting pet object:", newPet);
+    console.log("[PETS] Supabase URL:", supabaseUrl);
+    console.log("[PETS] Service key present:", !!supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from('pets')
+      .insert([newPet])
+      .select();
+
+    if (error) {
+      console.error("[PETS] Supabase insert error - code:", error.code);
+      console.error("[PETS] Supabase insert error - message:", error.message);
+      console.error("[PETS] Supabase insert error - status:", error.status);
+      console.error("[PETS] Supabase insert error - details:", error.details);
+      console.error("[PETS] Supabase insert error - hint:", error.hint);
+      console.error("[PETS] Supabase insert error - full:", JSON.stringify(error, null, 2));
+      return res.status(500).json({ error: "Failed to add pet", details: error.message, code: error.code, status: error.status });
+    }
+
+    if (!data || data.length === 0) {
+      console.error("[PETS] Insert succeeded but no data returned");
+      return res.status(500).json({ error: "Pet created but no data returned" });
+    }
+
+    console.log("[PETS] New pet added:", { petId, name, species, userId, data: data[0] });
     
-    return res.status(201).json(newPet);
+    return res.status(201).json(data[0]);
   } catch (err) {
     console.error("[PETS] Add pet error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 });
 
 // GET single pet
-app.get("/api/pets/:petId", (req, res) => {
+app.get("/api/pets/:petId", async (req, res) => {
   try {
     const { petId } = req.params;
-    const pet = petDatabase.get(petId);
 
-    if (!pet) {
+    const { data, error } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('id', petId)
+      .single();
+
+    if (error || !data) {
+      console.log("[PETS] Pet not found:", petId);
       return res.status(404).json({ error: "Pet not found" });
     }
 
-    return res.status(200).json(pet);
+    return res.status(200).json(data);
   } catch (err) {
     console.error("[PETS] Get pet error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -321,29 +368,46 @@ app.get("/api/pets/:petId", (req, res) => {
 });
 
 // PUT update pet
-app.put("/api/pets/:petId", (req, res) => {
+app.put("/api/pets/:petId", async (req, res) => {
   try {
     const { petId } = req.params;
-    const pet = petDatabase.get(petId);
+    const updates = req.body;
 
-    if (!pet) {
+    const { data: existingPet, error: fetchError } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('id', petId)
+      .single();
+
+    if (fetchError || !existingPet) {
+      console.log("[PETS] Pet not found:", petId);
       return res.status(404).json({ error: "Pet not found" });
     }
 
-    const updates = req.body;
     const updatedPet = {
-      ...pet,
+      ...existingPet,
       ...updates,
-      id: pet.id,
-      owner_id: pet.owner_id,
-      created_at: pet.created_at,
+      id: existingPet.id,
+      user_id: existingPet.user_id,
+      created_at: existingPet.created_at,
       updated_at: new Date().toISOString(),
     };
 
-    petDatabase.set(petId, updatedPet);
+    const { data, error } = await supabase
+      .from('pets')
+      .update(updatedPet)
+      .eq('id', petId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[PETS] Supabase update error:", error);
+      return res.status(500).json({ error: "Failed to update pet" });
+    }
+
     console.log("[PETS] Pet updated:", { petId, updates });
     
-    return res.status(200).json(updatedPet);
+    return res.status(200).json(data);
   } catch (err) {
     console.error("[PETS] Update pet error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -351,16 +415,31 @@ app.put("/api/pets/:petId", (req, res) => {
 });
 
 // DELETE pet
-app.delete("/api/pets/:petId", (req, res) => {
+app.delete("/api/pets/:petId", async (req, res) => {
   try {
     const { petId } = req.params;
-    const pet = petDatabase.get(petId);
 
-    if (!pet) {
+    const { data: existingPet, error: fetchError } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('id', petId)
+      .single();
+
+    if (fetchError || !existingPet) {
+      console.log("[PETS] Pet not found:", petId);
       return res.status(404).json({ error: "Pet not found" });
     }
 
-    petDatabase.delete(petId);
+    const { error } = await supabase
+      .from('pets')
+      .delete()
+      .eq('id', petId);
+
+    if (error) {
+      console.error("[PETS] Supabase delete error:", error);
+      return res.status(500).json({ error: "Failed to delete pet" });
+    }
+
     console.log("[PETS] Pet deleted:", { petId });
     
     return res.status(200).json({ success: true, message: "Pet deleted" });
@@ -368,6 +447,11 @@ app.delete("/api/pets/:petId", (req, res) => {
     console.error("[PETS] Delete pet error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// Fallback - MUST be at the end
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found", path: req.path });
 });
 
 app.listen(PORT, () => {

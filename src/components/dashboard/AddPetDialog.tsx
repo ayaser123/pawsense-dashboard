@@ -24,6 +24,14 @@ interface AddPetDialogProps {
   onPetAdded?: (pet: Pet) => void;
 }
 
+interface PetPayload {
+  name: string;
+  species: 'dog' | 'cat' | 'bird' | 'rabbit' | 'hamster' | 'other';
+  breed?: string;
+  age?: number;
+  gender?: string;
+}
+
 const petIcons = {
   dog: Dog,
   cat: Cat,
@@ -31,15 +39,6 @@ const petIcons = {
   rabbit: Rabbit,
   hamster: Rat,
   other: Bone,
-};
-
-const petEmojis = {
-  dog: "🐕",
-  cat: "🐱",
-  bird: "🐦",
-  rabbit: "🐰",
-  hamster: "🐹",
-  other: "🦴",
 };
 
 export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
@@ -53,41 +52,54 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
     species: "dog" as const,
     breed: "",
     age: "",
-    weight: "",
-    color: "",
+    gender: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    if (!formData.name) {
+      console.log("[FORM] Pet name is empty, aborting");
+      return;
+    }
 
     setLoading(true);
     setLocalError(null);
-    const newPet = await addPet({
-      name: formData.name,
-      species: formData.species,
-      breed: formData.breed || undefined,
-      age: formData.age ? parseInt(formData.age) : undefined,
-      weight: formData.weight ? parseFloat(formData.weight) : undefined,
-      color: formData.color || undefined,
-      image_emoji: petEmojis[formData.species],
-    });
 
-    if (newPet) {
-      setFormData({
-        name: "",
-        species: "dog",
-        breed: "",
-        age: "",
-        weight: "",
-        color: "",
-      });
-      setOpen(false);
-      onPetAdded?.(newPet);
-    } else {
-      setLocalError("Failed to add pet. Please try again.");
+    try {
+      const petPayload: PetPayload = {
+        name: formData.name,
+        species: formData.species,
+      };
+      
+      if (formData.breed) petPayload.breed = formData.breed;
+      if (formData.age) petPayload.age = parseInt(formData.age);
+      if (formData.gender) petPayload.gender = formData.gender;
+
+      console.log("[FORM] Form data:", formData);
+      console.log("[FORM] Pet payload being sent:", petPayload);
+      const newPet = await addPet(petPayload);
+
+      if (newPet) {
+        console.log("Pet added successfully:", newPet);
+        setFormData({
+          name: "",
+          species: "dog",
+          breed: "",
+          age: "",
+          gender: "",
+        });
+        setOpen(false);
+        onPetAdded?.(newPet);
+      } else {
+        console.error("addPet returned null");
+        setLocalError("Failed to add pet. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error in handleSubmit:", err);
+      setLocalError(err instanceof Error ? err.message : "Failed to add pet. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -108,50 +120,50 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
 
       {/* Centered Modal with Overlay */}
       {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-center justify-center p-4"
-        />
-      )}
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+          />
 
-      {/* Centered Modal Dialog */}
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: open ? 1 : 0.9, opacity: open ? 1 : 0 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        transition={{ type: "spring", damping: 20, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-      >
-        <div className="pointer-events-auto w-full max-w-md bg-gradient-to-br from-background via-background to-primary/5 border border-primary/20 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header with Gradient */}
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-primary/20 px-6 py-5 flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🐾</span>
-                <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Add Your Pet
-                </h2>
+          {/* Centered Modal Dialog */}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <div className="w-full max-w-md bg-gradient-to-br from-background via-background to-primary/5 border border-primary/20 rounded-2xl shadow-2xl overflow-hidden">
+              {/* Header with Gradient */}
+              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-primary/20 px-6 py-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🐾</span>
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                      Add Your Pet
+                    </h2>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tell us about your furry, feathered, or fluffy friend
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setOpen(false)}
+                  className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                </motion.button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Tell us about your furry, feathered, or fluffy friend
-              </p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setOpen(false)}
-              className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5 text-muted-foreground hover:text-primary" />
-            </motion.button>
-          </div>
 
-          {/* Form Container */}
-          <form onSubmit={handleSubmit} className="space-y-4 p-6 max-h-[70vh] overflow-y-auto">
+              {/* Form Container */}
+              <form onSubmit={handleSubmit} className="space-y-4 p-6 max-h-[70vh] overflow-y-auto">
           {/* Pet Name Field */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -252,7 +264,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
             />
           </motion.div>
 
-          {/* Age and Weight */}
+          {/* Age and Gender */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -277,42 +289,31 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
             </div>
 
             <div>
-              <Label htmlFor="weight" className="text-xs font-semibold text-primary">
-                Weight (kg)
+              <Label htmlFor="gender" className="text-xs font-semibold text-primary">
+                Gender
               </Label>
-              <Input
-                id="weight"
-                type="number"
-                value={formData.weight}
-                onChange={(e) =>
-                  setFormData({ ...formData, weight: e.target.value })
+              <Select
+                value={formData.gender}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    gender: value,
+                  })
                 }
-                placeholder="e.g., 25.5"
-                className="h-10 text-sm border-primary/20 focus:border-primary bg-primary/5 hover:bg-primary/10 transition-colors rounded-lg mt-1.5"
-                min="0"
-                step="0.1"
-              />
+              >
+                <SelectTrigger
+                  id="gender"
+                  className="h-10 text-sm border-primary/20 focus:border-primary bg-primary/5 hover:bg-primary/10 transition-colors rounded-lg mt-1.5"
+                >
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="unknown">Unknown</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </motion.div>
-
-          {/* Color Field */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Label htmlFor="color" className="text-xs font-semibold text-primary">
-              Color/Markings
-            </Label>
-            <Input
-              id="color"
-              value={formData.color}
-              onChange={(e) =>
-                setFormData({ ...formData, color: e.target.value })
-              }
-              placeholder="e.g., Brown and white"
-              className="h-10 text-sm border-primary/20 focus:border-primary bg-primary/5 hover:bg-primary/10 transition-colors rounded-lg mt-1.5"
-            />
           </motion.div>
 
           {/* Error Message */}
@@ -332,7 +333,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.3 }}
             className="flex gap-3 pt-4 border-t border-primary/10"
           >
             <Button
@@ -352,10 +353,12 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 {loading ? "Adding..." : "Add Pet"}
               </Button>
             </motion.div>
+              </motion.div>
+              </form>
+            </div>
           </motion.div>
-        </form>
-        </div>
-      </motion.div>
+        </>
+      )}
     </>
   );
 }

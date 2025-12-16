@@ -51,12 +51,6 @@ const features = [
     description: "Understand your pet's sleep patterns and improve their rest quality.",
     color: "bg-primary/10 text-primary",
   },
-  {
-    icon: Video,
-    title: "Telehealth",
-    description: "Connect with licensed vets instantly for advice and consultations.",
-    color: "bg-success/10 text-success",
-  },
 ];
 
 const stats = [

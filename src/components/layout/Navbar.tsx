@@ -20,7 +20,6 @@ const navItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Vet Finder", href: "/vet-finder", icon: MapPin },
-  { name: "Telehealth", href: "/telehealth", icon: Video },
   { name: "Alerts", href: "/alerts", icon: Bell },
   { name: "Contact", href: "/contact", icon: Bell },
 ];
