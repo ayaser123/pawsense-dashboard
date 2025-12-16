@@ -1,73 +1,107 @@
-# Welcome to your Lovable project
+# PawSense - AI-Powered Pet Behavior Dashboard
 
-## Project info
+An intelligent pet monitoring and analysis platform that uses AI to understand pet behavior, track health metrics, and connect pet owners with nearby veterinarians.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🎯 Features
 
-## How can I edit this code?
+- **AI Behavior Analysis**: Upload pet videos for AI-powered behavior and mood analysis using Ollama
+- **Vet Finder**: Discover nearby veterinarians using location-based search (Overpass API)
+- **Activity Tracking**: Monitor and track your pet's daily activities
+- **Pet Management**: Add and manage multiple pets with personalized profiles
+- **Alerts System**: Real-time alerts based on behavior analysis with history tracking
+- **User Authentication**: Secure signup/login with email verification via Supabase
+- **Contact Form**: Built-in contact submission system
 
-There are several ways of editing your application.
+## 🛠️ Tech Stack
 
-**Use Lovable**
+### Frontend
+- React 19 with TypeScript
+- Vite - Fast build tool and dev server
+- Tailwind CSS - Utility-first CSS framework
+- Shadcn/ui - High-quality UI components
+- Framer Motion - Smooth animations
+- React Router - Client-side routing
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Backend
+- Express.js - Node.js web framework
+- Supabase - PostgreSQL database + Auth + Storage
+- Admin Auth API - User management and email auto-confirmation
 
-Changes made via Lovable will be committed automatically to this repo.
+### Services
+- Ollama - Local LLM for video analysis (neural-chat model)
+- Overpass API - OpenStreetMap data for vet location search
+- Supabase Auth - Email-based authentication
 
-**Use your preferred IDE**
+## 📋 Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 18+ with npm
+- Supabase project (free tier available)
+- Ollama installed and running locally
+- Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🚀 Quick Start
 
-Follow these steps:
+### 1. Clone & Install
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+cd pawsense-dashboard
+npm install
 ```
 
-**Edit a file directly in GitHub**
+### 2. Environment Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
+SUPABASE_URL=https://your-project.supabase.co
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 3. Database Setup
 
-## What technologies are used for this project?
+Run this SQL in Supabase:
 
-This project is built with:
+```sql
+CREATE TABLE IF NOT EXISTS contacts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anyone to insert contacts" ON contacts FOR INSERT WITH CHECK (true);
+```
 
-## How can I deploy this project?
+### 4. Ollama Setup
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```bash
+ollama pull neural-chat
+ollama serve
+```
 
-## Can I connect a custom domain to my Lovable project?
+### 5. Start Servers
 
-Yes, you can!
+```bash
+npm run start:all
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Visit `http://localhost:8080`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📚 Resources
+
+- [Supabase Docs](https://supabase.com/docs)
+- [Ollama Documentation](https://github.com/ollama/ollama)
+- [React Documentation](https://react.dev)
+
+## 📄 License
+
+MIT
+
+---
+
+**Last Updated**: December 2025
