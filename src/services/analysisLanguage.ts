@@ -405,8 +405,11 @@ export class Interpreter {
       return this.evaluateComparison(comp);
     }
 
-    const leftResult = this.evaluateCondition(condition.left as any);
-    const rightResult = this.evaluateCondition(condition.right as any);
+    const leftCondition = condition.left as Condition | Comparison;
+    const rightCondition = condition.right as Condition | Comparison;
+
+    const leftResult = this.evaluateConditionOrComparison(leftCondition);
+    const rightResult = this.evaluateConditionOrComparison(rightCondition);
 
     if (condition.operator === "AND") {
       return leftResult && rightResult;
@@ -415,6 +418,14 @@ export class Interpreter {
     }
 
     return false;
+  }
+
+  private evaluateConditionOrComparison(expr: Condition | Comparison): boolean {
+    if (expr.type === "Condition") {
+      return this.evaluateCondition(expr as Condition);
+    } else {
+      return this.evaluateComparison(expr as Comparison);
+    }
   }
 
   private evaluateComparison(comparison: Comparison): boolean {
