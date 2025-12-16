@@ -8,17 +8,17 @@ import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { AddPetDialog } from "@/components/dashboard/AddPetDialog"
 import { PetSelector } from "@/components/dashboard/PetSelector"
-import { AlertsWindow, type AlertItem } from "@/components/dashboard/AlertsWindow"
+import { AlertsWidget } from "@/components/dashboard/AlertsWidget"
+import { AlertsAnalysis } from "@/components/dashboard/AlertsAnalysis"
+import { type AlertItem } from "@/components/dashboard/AlertsWindow"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Alert as AlertUI, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Upload, 
   Heart, 
   Activity, 
   Zap,
-  AlertCircle,
   CheckCircle,
   Video,
   BarChart3,
@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertsFromAnalysis, setAlertsFromAnalysis] = useState<AlertItem[]>([])
+  const [activeTab, setActiveTab] = useState("analysis")
 
   // Load nearby vets on component mount
   useEffect(() => {
@@ -265,7 +266,31 @@ export default function Dashboard() {
                 {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </p>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-3">
+              {/* Alerts Widget */}
+              <AlertsWidget
+                unreadCount={alerts.filter((a) => !a.read).length}
+                alerts={alerts
+                  .filter((a) => !a.read)
+                  .map((a) => ({
+                    id: a.id,
+                    type: a.type as 'success' | 'warning' | 'error' | 'info',
+                    title: a.title,
+                    message: a.message,
+                    action: a.action,
+                  }))}
+                onClick={(id) => {
+                  const alert = alerts.find(a => a.id === id)
+                  if (alert) {
+                    const updated = markAlertAsRead(id)
+                    setAlerts(updated)
+                  }
+                }}
+                onDismiss={(id) => {
+                  const updated = deleteAlert(id)
+                  setAlerts(updated)
+                }}
+              />
               <AddPetDialog onPetAdded={() => window.location.reload()} />
             </div>
           </div>
@@ -360,60 +385,24 @@ export default function Dashboard() {
         </motion.div>
         )}
 
-        {/* Alerts Window - Show analysis alerts + saved alerts */}
-        {(alertsFromAnalysis.length > 0 || alerts.length > 0) && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-500" />
-                <h3 className="font-semibold">Recent Alerts</h3>
-              </div>
-              <AlertsWindow
-                alerts={[
-                  ...alertsFromAnalysis,
-                  ...alerts
-                    .filter((a) => !a.read)
-                    .map((a) => ({
-                      id: a.id,
-                      type: a.type as 'success' | 'warning' | 'error' | 'info',
-                      title: a.title,
-                      message: a.message,
-                      action: a.action,
-                    }))
-                ]}
-                onClick={(id) => {
-                  // Mark persistent alerts as read when clicked
-                  const alert = alerts.find(a => a.id === id)
-                  if (alert) {
-                    const updated = markAlertAsRead(id)
-                    setAlerts(updated)
-                  }
-                }}
-                onDismiss={(id) => {
-                  setAlertsFromAnalysis(prev => prev.filter(a => a.id !== id))
-                  // Find if this is a persistent alert and delete it
-                  const alert = alerts.find(a => a.id === id)
-                  if (alert) {
-                    const updated = deleteAlert(id)
-                    setAlerts(updated)
-                  }
-                }}
-              />
-            </div>
-          </motion.div>
-        )}
+        {/* Tabbed Analysis Section */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="analysis">
+              <Upload className="h-4 w-4 mr-2" />
+              Video Analysis
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Alerts History
+            </TabsTrigger>
+          </TabsList>
 
-
-
-        {/* Video Analysis Section */}
-        <div className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Video Upload Component */}
-            <div className="lg:col-span-2">
+          {/* Video Analysis Tab */}
+          <TabsContent value="analysis" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Video Upload Component */}
+              <div className="lg:col-span-2">
               <Card>
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
@@ -527,7 +516,13 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
-        </div>
+          </TabsContent>
+
+          {/* Alerts History Tab */}
+          <TabsContent value="history" className="mt-6">
+            <AlertsAnalysis allAlerts={alerts} />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <Footer />
