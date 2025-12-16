@@ -15,10 +15,11 @@ export interface AlertItem {
 interface AlertsWindowProps {
   alerts: AlertItem[];
   onDismiss?: (id: string) => void;
+  onClick?: (id: string) => void;
   maxVisible?: number;
 }
 
-export function AlertsWindow({ alerts, onDismiss, maxVisible = 3 }: AlertsWindowProps) {
+export function AlertsWindow({ alerts, onDismiss, onClick, maxVisible = 3 }: AlertsWindowProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const visibleAlerts = alerts
@@ -63,7 +64,11 @@ export function AlertsWindow({ alerts, onDismiss, maxVisible = 3 }: AlertsWindow
   return (
     <div className="space-y-3 w-full">
       {visibleAlerts.map((alert) => (
-        <Alert key={alert.id} className={`relative ${getAlertClass(alert.type)}`}>
+        <Alert 
+          key={alert.id} 
+          className={`relative cursor-pointer hover:shadow-md transition-shadow ${getAlertClass(alert.type)}`}
+          onClick={() => onClick?.(alert.id)}
+        >
           <div className="flex gap-3">
             <div className="flex-shrink-0 mt-0.5">{getIcon(alert.type)}</div>
 

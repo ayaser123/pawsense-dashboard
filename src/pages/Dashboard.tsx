@@ -31,7 +31,7 @@ import {
 import { motion } from "framer-motion"
 import { analyzeVideoWithOllama } from "@/services/ollamaAI"
 import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
-import { createAlertFromAnalysis, addAlerts, loadAlerts, deleteAlert } from "@/services/alertsService"
+import { createAlertFromAnalysis, addAlerts, loadAlerts, deleteAlert, markAlertAsRead } from "@/services/alertsService"
 import type { Veterinarian } from "@/services/locationAPI"
 import type { AnalysisResult, Alert } from "@/services/alertsService"
 import type { Pet } from "@/hooks/usePets"
@@ -360,8 +360,8 @@ export default function Dashboard() {
         </motion.div>
         )}
 
-        {/* Alerts Window - Only show when alerts exist */}
-        {alertsFromAnalysis.length > 0 && (
+        {/* Alerts Window - Show analysis alerts + saved alerts */}
+        {(alertsFromAnalysis.length > 0 || alerts.length > 0) && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -370,12 +370,37 @@ export default function Dashboard() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-orange-500" />
-                <h3 className="font-semibold">Analysis Alerts</h3>
+                <h3 className="font-semibold">Recent Alerts</h3>
               </div>
               <AlertsWindow
-                alerts={alertsFromAnalysis}
+                alerts={[
+                  ...alertsFromAnalysis,
+                  ...alerts
+                    .filter((a) => !a.read)
+                    .map((a) => ({
+                      id: a.id,
+                      type: a.type as 'success' | 'warning' | 'error' | 'info',
+                      title: a.title,
+                      message: a.message,
+                      action: a.action,
+                    }))
+                ]}
+                onClick={(id) => {
+                  // Mark persistent alerts as read when clicked
+                  const alert = alerts.find(a => a.id === id)
+                  if (alert) {
+                    const updated = markAlertAsRead(id)
+                    setAlerts(updated)
+                  }
+                }}
                 onDismiss={(id) => {
                   setAlertsFromAnalysis(prev => prev.filter(a => a.id !== id))
+                  // Find if this is a persistent alert and delete it
+                  const alert = alerts.find(a => a.id === id)
+                  if (alert) {
+                    const updated = deleteAlert(id)
+                    setAlerts(updated)
+                  }
                 }}
               />
             </div>

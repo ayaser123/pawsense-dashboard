@@ -13,19 +13,7 @@ import {
   CheckCircle,
   Clock,
   Heart,
-  Thermometer,
-  Activity,
-  Pill,
-  Calendar,
-  MapPin,
   X,
-  ChevronRight,
-  Shield,
-  Zap,
-  Moon,
-  Sun,
-  Utensils,
-  Droplets,
 } from "lucide-react";
 
 interface Alert {
@@ -39,38 +27,8 @@ interface Alert {
   action?: string;
 }
 
-// Sample fallback alerts for initial state
-const sampleAlerts: Alert[] = [
-  {
-    id: "sample_1",
-    type: "critical",
-    title: "Unusual Behavior Detected",
-    message: "Your pet has been showing signs of lethargy for the past 2 hours. Consider scheduling a vet visit.",
-    pet: samplePets[0],
-    timestamp: "10 min ago",
-    read: false,
-    action: "Find Vet",
-  },
-  {
-    id: "sample_2",
-    type: "warning",
-    title: "Vaccination Due Soon",
-    message: "Your pet's rabies vaccination is due in 5 days. Don't forget to schedule an appointment!",
-    pet: samplePets[0],
-    timestamp: "1 hour ago",
-    read: false,
-    action: "Schedule",
-  },
-];
-
-const healthMetrics = [
-  { icon: Heart, label: "Heart Rate", value: "120 bpm", status: "normal", color: "text-destructive" },
-  { icon: Thermometer, label: "Temperature", value: "101.5°F", status: "normal", color: "text-warning" },
-  { icon: Activity, label: "Activity", value: "85%", status: "high", color: "text-success" },
-  { icon: Moon, label: "Sleep", value: "8.2h", status: "good", color: "text-info" },
-  { icon: Droplets, label: "Hydration", value: "Good", status: "normal", color: "text-info" },
-  { icon: Utensils, label: "Nutrition", value: "2 meals", status: "on track", color: "text-accent" },
-];
+// No sample alerts - only use alerts from actual video analysis
+const sampleAlerts: Alert[] = [];
 
 export default function Alerts() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -301,86 +259,6 @@ export default function Alerts() {
                       </div>
                     )}
                   </AnimatePresence>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Health Overview */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-6"
-            >
-              {/* Pet Health Card */}
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="h-5 w-5 text-destructive" />
-                    Health Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* Pet Selector */}
-                  <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                    {samplePets.map((pet) => (
-                      <button
-                        key={pet.id}
-                        onClick={() => setSelectedPet(pet)}
-                        className={`flex-shrink-0 px-3 py-2 rounded-xl border-2 transition-all ${
-                          (selectedPet?.id || samplePets[0].id) === pet.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border/50 hover:border-primary/50"
-                        }`}
-                      >
-                        <div className="text-2xl mb-1">{pet.image}</div>
-                        <p className="text-xs font-medium">{pet.name}</p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Metrics Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {healthMetrics.map((metric, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="p-3 bg-secondary/50 rounded-xl"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <metric.icon className={`h-4 w-4 ${metric.color}`} />
-                          <span className="text-xs text-muted-foreground">{metric.label}</span>
-                        </div>
-                        <p className="font-heading font-bold text-foreground">{metric.value}</p>
-                        <p className="text-xs text-success capitalize">{metric.status}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-accent" />
-                    Quick Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {[
-                    { icon: Calendar, label: "Schedule Vet Visit", color: "text-primary" },
-                    { icon: Pill, label: "Log Medication", color: "text-success" },
-                    { icon: Utensils, label: "Track Feeding", color: "text-warning" },
-                    { icon: MapPin, label: "Find Emergency Vet", color: "text-destructive" },
-                  ].map((action, i) => (
-                    <Button key={i} variant="outline" className="w-full justify-start gap-3">
-                      <action.icon className={`h-4 w-4 ${action.color}`} />
-                      {action.label}
-                      <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
-                    </Button>
-                  ))}
                 </CardContent>
               </Card>
             </motion.div>
