@@ -31,7 +31,7 @@ app.get("/", (_req, res) => {
 });
 
 // --- Auth endpoints (minimal stubs to support frontend/tests) ---
-app.post("/auth/create-user", (req, res) => {
+app.post("/auth/create-user", async (req, res) => {
   try {
     const { email, password, metadata } = req.body || {};
 
@@ -43,13 +43,138 @@ app.post("/auth/create-user", (req, res) => {
       return res.status(422).json({ error: "Invalid password", details: "Password must be at least 6 characters" });
     }
 
-    const userId = randomUUID();
-    console.log("[AUTH] Create user:", { email, userId, metadata });
+    console.log("[AUTH] Creating user with admin API:", email);
 
-    return res.status(201).json({ success: true, userId, email });
+    // Try to create user using admin API with auto-confirmed email
+    let data;
+    let error;
+    
+    try {
+      const response = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: metadata || {}
+      });
+      data = response.data;
+      error = response.error;
+    } catch (err) {
+      error = err;
+    }
+
+    // If user already exists, update their password and confirm email
+    if (error && error.message && error.message.includes("already been registered")) {
+      console.log("[AUTH] User already exists, updating password and confirming email:", email);
+      
+      // Find the user
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+      if (listError) {
+        console.error("[AUTH] Failed to list users:", listError);
+        return res.status(500).json({ error: "Failed to find user", details: listError.message });
+      }
+
+      const existingUser = users.find(u => u.email === email);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Update password and confirm email
+      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
+        password,
+        email_confirm: true
+      });
+
+      if (updateError) {
+        console.error("[AUTH] Failed to update user:", updateError);
+        return res.status(500).json({ error: "Failed to update user", details: updateError.message });
+      }
+
+      console.log("[AUTH] ✅ User updated:", updateData.user?.id, "| Email confirmed:", !!updateData.user?.email_confirmed_at);
+      
+      return res.status(201).json({ 
+        success: true, 
+        userId: updateData.user?.id, 
+        email: updateData.user?.email,
+        email_confirmed_at: updateData.user?.email_confirmed_at,
+        isUpdate: true
+      });
+    }
+
+    if (error) {
+      console.error("[AUTH] Failed to create user:", error);
+      return res.status(422).json({ error: "Failed to create user", details: error.message });
+    }
+
+    console.log("[AUTH] ✅ User created:", data.user?.id, "| Email confirmed:", !!data.user?.email_confirmed_at);
+
+    return res.status(201).json({ 
+      success: true, 
+      userId: data.user?.id, 
+      email: data.user?.email,
+      email_confirmed_at: data.user?.email_confirmed_at
+    });
   } catch (err) {
     console.error("[AUTH] create-user error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error", details: err.message });
+  }
+});
+
+// Auto-confirm user email (required because we disabled email confirmation)
+app.post("/auth/confirm-email", async (req, res) => {
+  try {
+    const { email } = req.body || {};
+
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return res.status(422).json({ error: "Invalid email" });
+    }
+
+    console.log("[AUTH] Auto-confirming email for:", email);
+
+    // List all users to find the one with this email
+    let users = [];
+    try {
+      const { data, error } = await supabase.auth.admin.listUsers();
+      if (error) throw error;
+      users = data.users || [];
+    } catch (err) {
+      console.error("[AUTH] Failed to list users:", err);
+      return res.status(500).json({ error: "Failed to list users", details: err.message });
+    }
+
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      console.error("[AUTH] User not found with email:", email);
+      console.log("[AUTH] Available emails:", users.map(u => u.email).join(", "));
+      return res.status(404).json({ error: "User not found", email, availableCount: users.length });
+    }
+
+    console.log("[AUTH] Found user:", user.id, "| Email verified before:", user.email_confirmed_at);
+
+    // Update user to confirm email
+    try {
+      const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+        email_confirm: true
+      });
+
+      if (error) {
+        console.error("[AUTH] Update error:", error);
+        return res.status(500).json({ error: "Failed to confirm email", details: error.message });
+      }
+
+      console.log("[AUTH] Email confirmed for:", email, "| User ID:", data.user?.id, "| Confirmed at:", data.user?.email_confirmed_at);
+      return res.status(200).json({ 
+        success: true, 
+        message: "Email confirmed", 
+        user: data.user?.id,
+        email_confirmed_at: data.user?.email_confirmed_at
+      });
+    } catch (err) {
+      console.error("[AUTH] Update failed:", err);
+      return res.status(500).json({ error: "Failed to confirm email", details: err.message });
+    }
+  } catch (err) {
+    console.error("[AUTH] confirm-email error:", err);
+    return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 });
 

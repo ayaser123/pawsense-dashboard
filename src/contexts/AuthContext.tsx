@@ -72,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[AUTH] Auth state changed:", event, "User confirmed?", !!session?.user?.email_confirmed_at)
       if (isMounted) {
         setSession(session)
         setUser(session?.user || null)
@@ -136,14 +137,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signup = async (email: string, password: string, userData?: UserMetadata) => {
-    const { error, data } = await supabase.auth.signUp({
+    console.log("[AUTH] Starting signup with email:", email)
+    console.log("[AUTH] User metadata to save:", userData)
+    
+    // Create user on backend using admin API
+    console.log("[AUTH] Creating user via backend...")
+    const createRes = await fetch("http://localhost:5000/auth/create-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, metadata: userData })
+    })
+    
+    const createData = await createRes.json()
+    console.log("[AUTH] Create response status:", createRes.status)
+    console.log("[AUTH] Create response:", createData)
+    
+    if (!createRes.ok) {
+      console.error("[AUTH] Create user failed:", createData.error)
+      throw new Error(createData.error || "Failed to create user")
+    }
+    
+    console.log("✅ User created successfully - User ID:", createData.userId)
+    console.log("[AUTH] Email confirmed at:", createData.email_confirmed_at)
+    
+    // Now login with the credentials
+    console.log("[AUTH] Attempting login after user creation...")
+    const { error: loginError, data: loginData } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: { data: userData },
     })
-    if (error) throw error
-    if (data.user) {
-      console.log("✅ Signup successful - check email for confirmation")
+    
+    if (loginError) {
+      console.error("[AUTH] ❌ Login failed:", loginError.message)
+      throw loginError
+    }
+    
+    console.log("[AUTH] ✅ Login successful, session:", !!loginData.session)
+    if (loginData.session) {
+      setSession(loginData.session)
+      setUser(loginData.session.user)
     }
   }
 

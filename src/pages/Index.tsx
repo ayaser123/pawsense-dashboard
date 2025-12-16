@@ -11,8 +11,6 @@ import {
   Activity,
   MapPin,
   Video,
-  Moon,
-  Volume2,
   ArrowRight,
   Sparkles,
   Heart,
@@ -28,12 +26,6 @@ const features = [
     color: "bg-primary/10 text-primary",
   },
   {
-    icon: Volume2,
-    title: "Sound Translator",
-    description: "Decode what your pet is trying to tell you with our AI sound analyzer.",
-    color: "bg-accent/20 text-accent-foreground",
-  },
-  {
     icon: MapPin,
     title: "Vet Finder",
     description: "Find trusted veterinarians near you with real-time availability.",
@@ -44,12 +36,6 @@ const features = [
     title: "Activity Tracking",
     description: "Monitor your pet's daily activities with GPS-enabled tracking.",
     color: "bg-info/10 text-info",
-  },
-  {
-    icon: Moon,
-    title: "Sleep Analytics",
-    description: "Understand your pet's sleep patterns and improve their rest quality.",
-    color: "bg-primary/10 text-primary",
   },
 ];
 
@@ -122,9 +108,6 @@ export default function Index() {
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
-                <Button variant="outline" size="xl" className="gap-2">
-                  Watch Demo
-                </Button>
               </motion.div>
 
               {/* Stats */}

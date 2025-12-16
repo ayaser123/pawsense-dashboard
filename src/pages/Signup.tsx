@@ -12,7 +12,7 @@ import { TermsModal } from "@/components/TermsModal";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, isLoading, checkEmailExists } = useAuth();
+  const { signup, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,6 +27,7 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,21 +67,6 @@ const Signup = () => {
       return;
     }
 
-    // Check if email already exists in Supabase (backend check)
-    try {
-      const emailExists = await checkEmailExists(formData.email);
-      if (emailExists) {
-        setError("This email is already registered. Please login or use a different email.");
-        setIsSubmitting(false);
-        return;
-      }
-    } catch (err) {
-      console.error("Error checking email:", err);
-      setError("Could not verify email. Please try again.");
-      setIsSubmitting(false);
-      return;
-    }
-
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setIsSubmitting(false);
@@ -104,43 +90,27 @@ const Signup = () => {
         full_name: formData.fullName,
       });
       
-      if (import.meta.env.DEV) {
-        // In dev mode, email is auto-confirmed and user is auto-logged in
-        setSuccess("✅ Signup successful! Logging you in...");
-        setTimeout(() => navigate("/dashboard", { replace: true }), 500);
-      } else {
-        // In production, user must confirm email first
-        setSuccess("✅ Signup successful! Check your email to confirm your account.");
-        setTimeout(() => navigate("/confirm-email", { replace: true }), 2000);
-      }
+      console.log("[SIGNUP] Signup successful, redirecting to dashboard");
+      setSuccess("✅ Account created successfully!");
+      setTimeout(() => navigate("/dashboard", { replace: true }), 1000);
     } catch (err) {
       let errorMessage = "Failed to signup. Please try again."
       
-      console.error("[SIGNUP] Raw error:", err)
-      console.error("[SIGNUP] Error type:", typeof err)
-      console.error("[SIGNUP] Error instanceof Error:", err instanceof Error)
+      console.error("[SIGNUP] Error:", err)
       
       if (err instanceof Error) {
         errorMessage = err.message
-        console.error("[SIGNUP] Extracted from Error.message:", errorMessage)
       } else if (typeof err === "string") {
         errorMessage = err
-        console.error("[SIGNUP] Extracted from string:", errorMessage)
       } else if (err && typeof err === "object") {
-        // Try multiple paths to extract the message
         const errorObj = err as Record<string, unknown>
-        console.error("[SIGNUP] Error object keys:", Object.keys(errorObj))
-        
         errorMessage = 
           (errorObj.message as string) ||
           (errorObj.error as string) ||
           (errorObj.details as string) ||
-          (typeof errorObj.toString === 'function' ? errorObj.toString() : JSON.stringify(err))
-        
-        console.error("[SIGNUP] Extracted from object:", errorMessage)
+          JSON.stringify(err)
       }
       
-      console.error("[SIGNUP] Final error message:", errorMessage)
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
