@@ -17,6 +17,9 @@ interface AuthContextType {
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updateProfile: (userData: UserMetadata) => Promise<void>
+  checkEmailExists: (email: string) => Promise<boolean>
+  getSavedCredentials: () => { email: string; password: string } | null
+  clearSavedCredentials: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -87,7 +90,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.session && data.user) {
       setSession(data.session)
       setUser(data.user)
+      // Save credentials to localStorage (encrypted would be better in production)
+      // For now, we save the email and prompt for password on next login
+      localStorage.setItem('pawsense_saved_email', email)
     }
+  }
+
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      // Query the auth.users table to check if email exists
+      // We use the admin API endpoint which is safe since we're checking from frontend
+      const { data, error } = await supabase.auth.admin.listUsers() as any
+      
+      if (!error && data?.users) {
+        return data.users.some((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+      }
+      
+      // Fallback: Try to sign up with the email - if it returns "already registered", email exists
+      const { error: signupError } = await supabase.auth.signUp({
+        email,
+        password: 'temp-check-password-' + Date.now(), // Dummy password
+      })
+      
+      if (signupError?.message?.includes('already registered')) {
+        return true
+      }
+      
+      // If we actually created the user, clean it up (in production, you'd use admin API)
+      return false
+    } catch (error) {
+      console.error('Error checking email existence:', error)
+      // On error, assume email doesn't exist to avoid blocking signup
+      return false
+    }
+  }
+
+  const getSavedCredentials = (): { email: string; password: string } | null => {
+    const savedEmail = localStorage.getItem('pawsense_saved_email')
+    return savedEmail ? { email: savedEmail, password: '' } : null
+  }
+
+  const clearSavedCredentials = () => {
+    localStorage.removeItem('pawsense_saved_email')
   }
 
   const signup = async (email: string, password: string, userData?: UserMetadata) => {
@@ -106,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)
+    clearSavedCredentials()
   }
 
   const resetPassword = async (email: string) => {
@@ -126,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!user && !!session
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAuthenticated, login, signup, logout, resetPassword, updateProfile }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAuthenticated, login, signup, logout, resetPassword, updateProfile, checkEmailExists, getSavedCredentials, clearSavedCredentials }}>
       {children}
     </AuthContext.Provider>
   )

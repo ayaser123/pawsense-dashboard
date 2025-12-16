@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, isLoading } = useAuth();
+  const { signup, isLoading, checkEmailExists } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,7 +27,8 @@ const Signup = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,6 +60,21 @@ const Signup = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check if email already exists in Supabase (backend check)
+    try {
+      const emailExists = await checkEmailExists(formData.email);
+      if (emailExists) {
+        setError("This email is already registered. Please login or use a different email.");
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Error checking email:", err);
+      setError("Could not verify email. Please try again.");
       setIsSubmitting(false);
       return;
     }

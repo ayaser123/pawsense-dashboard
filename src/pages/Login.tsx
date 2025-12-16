@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,16 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2, PawPrint } from "lucide-react";
+import { AlertCircle, Loader2, PawPrint, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, getSavedCredentials, clearSavedCredentials } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedEmail, setSavedEmail] = useState<string | null>(null);
+
+  // Load saved email on mount
+  useEffect(() => {
+    const saved = getSavedCredentials();
+    if (saved?.email) {
+      setSavedEmail(saved.email);
+      setEmail(saved.email);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +75,26 @@ const Login = () => {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="email">Email</Label>
+                {savedEmail && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => {
+                      clearSavedCredentials();
+                      setSavedEmail(null);
+                      setEmail("");
+                      setPassword("");
+                    }}
+                    className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Clear saved
+                  </motion.button>
+                )}
+              </div>
               <Input
                 id="email"
                 type="email"
@@ -75,6 +104,11 @@ const Login = () => {
                 disabled={isSubmitting || isLoading}
                 required
               />
+              {savedEmail && email === savedEmail && (
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  ✓ Saved email
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
