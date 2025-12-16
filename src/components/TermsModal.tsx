@@ -12,16 +12,16 @@ interface TermsModalProps {
 export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] p-0 flex flex-col">
+        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b">
           <DialogTitle>Terms of Service & Data Accuracy Disclaimer</DialogTitle>
           <DialogDescription>
             Please read and understand these terms before using PawSense
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-[500px] pr-4">
-          <div className="space-y-6 text-sm">
+        <ScrollArea className="flex-1 w-full">
+          <div className="space-y-6 text-sm px-6 py-4">
             {/* Data Accuracy Warning */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex gap-3">
@@ -114,7 +114,7 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
           </div>
         </ScrollArea>
 
-        <div className="flex gap-3 justify-end pt-4 border-t">
+        <div className="flex gap-3 justify-end px-6 py-4 border-t flex-shrink-0 bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Decline
           </Button>
