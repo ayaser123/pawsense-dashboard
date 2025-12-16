@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { AlertCircle, Loader2, PawPrint, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TermsModal } from "@/components/TermsModal";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -270,7 +272,13 @@ const Signup = () => {
                 disabled={isSubmitting || isLoading}
                 className="h-4 w-4"
               />
-              <Label htmlFor="terms">I accept the Terms and Privacy Policy</Label>
+              <Label htmlFor="terms">I accept the <button
+                type="button"
+                onClick={() => setTermsOpen(true)}
+                className="text-primary hover:underline font-medium"
+              >
+                Terms & Privacy Policy
+              </button></Label>
             </div>
 
             <Button
@@ -307,6 +315,8 @@ const Signup = () => {
           </div>
         </Card>
       </motion.div>
+
+      <TermsModal open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
   );
 };

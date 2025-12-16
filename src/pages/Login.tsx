@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { AlertCircle, Loader2, PawPrint, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TermsModal } from "@/components/TermsModal";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const Login = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   // Load saved email on mount
   useEffect(() => {
@@ -34,6 +37,12 @@ const Login = () => {
 
     try {
       await login(email, password);
+      // Save email if Remember Me is checked
+      if (rememberMe) {
+        localStorage.setItem("pawsense_saved_email", email);
+      } else {
+        localStorage.removeItem("pawsense_saved_email");
+      }
       navigate("/dashboard");
     } catch (err) {
       const errorMessage =
@@ -124,6 +133,18 @@ const Login = () => {
               />
             </div>
 
+            <div className="flex items-center gap-2">
+              <input
+                id="rememberMe"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={isSubmitting || isLoading}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal">Remember me</Label>
+            </div>
+
             <Button
               type="submit"
               className="w-full"
@@ -158,9 +179,18 @@ const Login = () => {
             <Link to="/forgot-password" className="text-primary hover:underline block">
               Forgot password?
             </Link>
+            <button
+              type="button"
+              onClick={() => setTermsOpen(true)}
+              className="text-primary hover:underline block text-xs"
+            >
+              View Terms & Conditions
+            </button>
           </div>
         </Card>
       </motion.div>
+
+      <TermsModal open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
   );
 };
