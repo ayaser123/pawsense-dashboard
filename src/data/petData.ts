@@ -50,38 +50,8 @@ export interface VetLocation {
 }
 
 
-export const samplePets: Pet[] = [
-  {
-    id: "1",
-    name: "Luna",
-    type: "dog",
-    breed: "Golden Retriever",
-    age: 3,
-    image: "🐕",
-    mood: "happy",
-    lastActivity: "Playing in the park",
-  },
-  {
-    id: "2",
-    name: "Whiskers",
-    type: "cat",
-    breed: "Persian",
-    age: 5,
-    image: "🐈",
-    mood: "calm",
-    lastActivity: "Napping by the window",
-  },
-  {
-    id: "3",
-    name: "Max",
-    type: "dog",
-    breed: "German Shepherd",
-    age: 2,
-    image: "🦮",
-    mood: "sick",
-    lastActivity: "Resting, low energy",
-  },
-];
+// No default sample pets - users must add their own pets
+export const samplePets: Pet[] = [];
 
 export const samplePredictions: BehaviorPrediction[] = [
   {

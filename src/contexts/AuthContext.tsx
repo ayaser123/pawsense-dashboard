@@ -28,25 +28,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state on mount
   useEffect(() => {
+    let isMounted = true
+
     const initializeAuth = async () => {
       try {
-        // Add timeout to prevent hanging indefinitely
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Auth initialization timeout")), 5000)
-        )
+        // Get session with strict timeout
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
         
-        const sessionPromise = supabase.auth.getSession()
-        const result = (await Promise.race([sessionPromise, timeoutPromise])) as { data: { session: Session | null } }
-        const { data: { session } } = result
-        setSession(session)
-        setUser(session?.user || null)
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          clearTimeout(timeoutId)
+          
+          if (isMounted) {
+            setSession(session)
+            setUser(session?.user || null)
+          }
+        } catch (timeoutError) {
+          clearTimeout(timeoutId)
+          console.warn("Auth timeout - treating as logged out")
+          if (isMounted) {
+            setSession(null)
+            setUser(null)
+          }
+        }
       } catch (error) {
         console.error("Error initializing auth:", error)
-        // Fail gracefully - treat as logged out
-        setSession(null)
-        setUser(null)
+        if (isMounted) {
+          setSession(null)
+          setUser(null)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -54,12 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      setUser(session?.user || null)
-      setIsLoading(false)
+      if (isMounted) {
+        setSession(session)
+        setUser(session?.user || null)
+      }
     })
 
     return () => {
+      isMounted = false
       authListener?.subscription?.unsubscribe()
     }
   }, [])

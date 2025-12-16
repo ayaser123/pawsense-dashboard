@@ -75,11 +75,32 @@ export class AlertRulesLanguage {
   }
 
   private static tokenize(input: string): string[] {
-    // Simple tokenization: split by keywords and whitespace
-    return input
-      .replace(/[{}()[\]]/g, (match) => ` ${match} `)
-      .split(/\s+/)
-      .filter((token) => token.length > 0);
+    // Better tokenization that preserves quoted strings
+    const tokens: string[] = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const char = input[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+        current += char;
+      } else if (!inQuotes && /\s/.test(char)) {
+        if (current) {
+          tokens.push(current);
+          current = "";
+        }
+      } else {
+        current += char;
+      }
+    }
+
+    if (current) {
+      tokens.push(current);
+    }
+
+    return tokens.filter((token) => token.length > 0);
   }
 
   /**
@@ -94,16 +115,18 @@ export class AlertRulesLanguage {
     }
     index++;
 
-    // Get rule name (string)
-    const name = tokens[index];
-    if (!name || name.startsWith('"') === false) {
+    // Get rule name (quoted string)
+    const nameToken = tokens[index];
+    if (!nameToken) {
       throw new Error("Expected rule name after RULE");
     }
+    const name = nameToken.startsWith('"') ? nameToken.slice(1, -1) : nameToken;
     index++;
 
     // Expect WHEN
-    if (tokens[index] !== "WHEN") {
-      throw new Error("Expected WHEN after rule name");
+    const whenToken = tokens[index];
+    if (whenToken !== "WHEN") {
+      throw new Error(`Expected WHEN after rule name, got: ${whenToken}`);
     }
     index++;
 
@@ -121,7 +144,7 @@ export class AlertRulesLanguage {
     const action = this.parseAction(tokens, index);
 
     return {
-      name: name.replace(/"/g, ""),
+      name: name,
       condition,
       action,
     };

@@ -7,7 +7,7 @@
  * - ConcurrencyManager for safe concurrent access
  */
 
-import type { Pet } from "@/data/petData";
+import type { Pet } from "@/hooks/usePets";
 import type { AlertADT } from "@/adt/AlertADT";
 import { createAlert, getSeverityFromType } from "@/adt/AlertADT";
 import { PetADT, createPet } from "@/adt/PetADT";
@@ -63,15 +63,21 @@ class AlertsServiceImpl {
    */
   async createAlertsFromAnalysis(analysis: AnalysisResult, pet: Pet): Promise<AlertADT[]> {
     return this.semaphore.withPermit(async () => {
-      // Create PetADT from legacy pet data
+      // Map species to PetType
+      let petType: "dog" | "cat" | "bird" | "rabbit" = "dog";
+      if (pet.species === "cat") petType = "cat";
+      else if (pet.species === "bird") petType = "bird";
+      else if (pet.species === "rabbit") petType = "rabbit";
+
+      // Create PetADT from pet data (use available properties)
       const petADT = createPet({
         id: pet.id,
         name: pet.name,
-        type: pet.type,
-        breed: pet.breed,
-        age: pet.age,
-        mood: pet.mood,
-        image: pet.image,
+        type: petType,
+        breed: pet.breed || "Unknown",
+        age: pet.age || 0,
+        mood: "happy",
+        image: pet.image_emoji || "🐾",
       });
 
       const alerts: AlertADT[] = [];
