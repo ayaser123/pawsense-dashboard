@@ -15,6 +15,8 @@ apiClient.interceptors.request.use(async (config) => {
     data: { session },
   } = await supabase.auth.getSession()
 
+  console.log("[API] Request to:", config.url, "Session user ID:", session?.user?.id);
+
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`
   }
@@ -22,6 +24,9 @@ apiClient.interceptors.request.use(async (config) => {
   // Add user ID from session
   if (session?.user?.id) {
     config.headers["x-user-id"] = session.user.id
+    console.log("[API] Added x-user-id header:", session.user.id);
+  } else {
+    console.warn("[API] No user ID in session!");
   }
 
   if (config.url?.includes("/videos")) {

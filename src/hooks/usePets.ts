@@ -31,28 +31,40 @@ export function usePets(): UsePetsResult {
   const [error, setError] = useState<string | null>(null);
 
   const fetchPets = useCallback(async () => {
-    if (!user) {
+    if (!user?.id) {
+      console.log("[usePets] No user ID available, skipping fetch. User:", user?.id);
       setPets([]);
+      setLoading(false);
+      setError(null);
       return;
     }
 
     try {
+      console.log("[usePets] Fetching pets for user:", user.id);
       setLoading(true);
       setError(null);
       const response = await apiClient.get('/api/pets');
+      console.log("[usePets] Got response:", response.data);
+      console.log("[usePets] Response length:", response.data?.length || 0);
       setPets(response.data || []);
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string } }; message?: string };
-      setError(apiErr.response?.data?.error || 'Failed to fetch pets');
+      const errorMsg = apiErr.response?.data?.error || 'Failed to fetch pets';
+      console.error("[usePets] Fetch error:", errorMsg, err);
+      setError(errorMsg);
       setPets([]);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
-    fetchPets();
-  }, [fetchPets]);
+    // Small delay to ensure session is fully initialized
+    const timer = setTimeout(() => {
+      fetchPets()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [user?.id, fetchPets])
 
   const addPet = async (petData: Omit<Pet, 'id' | 'owner_id' | 'created_at' | 'updated_at'>): Promise<Pet | null> => {
     try {

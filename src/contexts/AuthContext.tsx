@@ -88,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error, data } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     if (data.session && data.user) {
+      console.log("[AUTH] Login successful! User ID:", data.user.id);
       setSession(data.session)
       setUser(data.user)
       // Save credentials to localStorage (encrypted would be better in production)

@@ -51,7 +51,7 @@ const itemVariants = {
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth()
-  const { pets, loading: petsLoading, addPet: addPetToHook } = usePets()
+  const { pets, loading: petsLoading, addPet: addPetToHook, refetch: refetchPets } = usePets()
   const [uploadedVideos, setUploadedVideos] = useState<AnalysisResult[]>([])
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -60,6 +60,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertsFromAnalysis, setAlertsFromAnalysis] = useState<AlertItem[]>([])
   const [activeTab, setActiveTab] = useState("analysis")
+  const [isRefetching, setIsRefetching] = useState(false)
 
   // Load nearby vets on component mount
   useEffect(() => {
@@ -73,6 +74,18 @@ export default function Dashboard() {
     const loadedAlerts = loadAlerts()
     setAlerts(loadedAlerts)
   }, [])
+
+  const handleRefetchPets = async () => {
+    setIsRefetching(true)
+    try {
+      await refetchPets()
+      console.log("[DASHBOARD] Pets refetched successfully")
+    } catch (err) {
+      console.error("[DASHBOARD] Error refetching pets:", err)
+    } finally {
+      setIsRefetching(false)
+    }
+  }
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -298,6 +311,17 @@ export default function Dashboard() {
           {/* Pet Selector */}
           {selectedPet && pets.length > 0 && (
             <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Select Pet</h2>
+                <button
+                  onClick={handleRefetchPets}
+                  disabled={isRefetching || petsLoading}
+                  className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 disabled:bg-gray-200 text-blue-700 rounded transition-colors"
+                  title="Refresh pet list"
+                >
+                  {isRefetching || petsLoading ? "Loading..." : "Refresh"}
+                </button>
+              </div>
               <PetSelector 
                 pets={pets} 
                 selectedPet={selectedPet} 
