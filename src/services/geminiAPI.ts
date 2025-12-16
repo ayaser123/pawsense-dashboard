@@ -96,7 +96,7 @@ export async function analyzeVideoWithGemini(videoFile: File): Promise<AnalysisR
     }
 
     // Validate and normalize response - APPLY LITTLE LANGUAGE ANALYSIS
-    let result: AnalysisResponse = {
+    const result: AnalysisResponse = {
       behavior: String(analysis.behavior || "Pet activity").slice(0, 50),
       confidence: Math.min(Math.max(Number(analysis.confidence) || 0.7, 0), 1),
       mood: String(analysis.mood || "calm").toLowerCase(),

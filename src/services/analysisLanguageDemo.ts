@@ -79,8 +79,9 @@ export function demonstrateParser() {
     console.log("  - Grammar-driven parsing (EBNF notation)");
     console.log("  - Recursive descent parser implementation");
     console.log("  - Error detection with line/column information");
-  } catch (error: any) {
-    console.error("Parse Error:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Parse Error:", message);
   }
 }
 
@@ -153,8 +154,9 @@ export function demonstrateErrorHandling() {
   try {
     const invalid1 = `IF activity 70 THEN mood = "invalid"`;
     compileAnalysisProgram(invalid1);
-  } catch (error: any) {
-    console.error("Error:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error:", message);
     console.log("Detection: Failed at parsing comparison operator");
   }
 
@@ -163,8 +165,9 @@ export function demonstrateErrorHandling() {
   try {
     const program = compileAnalysisProgram(`IF undefined_var > 50 THEN mood = "fail"`);
     executeAnalysisProgram(program, { activity: 75 }); // missing undefined_var
-  } catch (error: any) {
-    console.error("Error:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error:", message);
     console.log("Detection: Variable resolution failed at runtime");
   }
 
@@ -173,8 +176,9 @@ export function demonstrateErrorHandling() {
   try {
     const invalid3 = `IF activity BETWEEN 30 THEN mood = "invalid"`;
     compileAnalysisProgram(invalid3);
-  } catch (error: any) {
-    console.error("Error:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error:", message);
     console.log("Detection: BETWEEN requires AND clause");
   }
 

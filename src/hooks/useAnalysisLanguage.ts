@@ -89,8 +89,9 @@ export function useAnalysisLanguage() {
       try {
         compileAnalysisProgram(programText);
         return { valid: true };
-      } catch (error: any) {
-        return { valid: false, error: error.message };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return { valid: false, error: errorMessage };
       }
     },
     []

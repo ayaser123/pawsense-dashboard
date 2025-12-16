@@ -23,12 +23,12 @@ export function useAlertRules() {
   /**
    * Convert video analysis to alert context
    */
-  const analysisToContext = useCallback((analysis: Record<string, any>): AlertContext => {
+  const analysisToContext = useCallback((analysis: Record<string, string | number | boolean>): AlertContext => {
     return {
-      "pet.mood": analysis.mood || "unknown",
-      "pet.energy": analysis.energy || "unknown",
-      "pet.behavior": analysis.behavior || "unknown",
-      "pet.confidence": analysis.confidence || 0,
+      "pet.mood": (analysis.mood as string) || "unknown",
+      "pet.energy": (analysis.energy as string) || "unknown",
+      "pet.behavior": (analysis.behavior as string) || "unknown",
+      "pet.confidence": (analysis.confidence as number) || 0,
     };
   }, []);
 
@@ -36,7 +36,7 @@ export function useAlertRules() {
    * Evaluate rules against analysis results
    */
   const evaluateAlerts = useCallback(
-    (analysis: Record<string, any>): AlertADT[] => {
+    (analysis: Record<string, string | number | boolean>): AlertADT[] => {
       try {
         const context = analysisToContext(analysis);
         // For now, return empty array - AlertADT integration pending
@@ -49,7 +49,7 @@ export function useAlertRules() {
         return [];
       }
     },
-    [analysisToContext, engine]
+    [analysisToContext]
   );
 
   /**

@@ -288,14 +288,14 @@ export class Parser {
   }
 
   private parseCondition(): Condition {
-    let left = this.parseComparison();
+    let left: Condition | Comparison = this.parseComparison();
     let operator: "AND" | "OR" | null = null;
     let right: Comparison | Condition | undefined;
 
     while (this.peek().type === "AND" || this.peek().type === "OR") {
       operator = this.advance().value as "AND" | "OR";
       right = this.parseComparison();
-      left = { type: "Condition", operator, left, right } as any;
+      left = { type: "Condition", operator, left, right } as Condition;
     }
 
     if (operator === null) {
@@ -428,12 +428,18 @@ export class Interpreter {
         return Number(leftValue) < Number(rightValue);
       case "=":
         return leftValue === rightValue;
-      case "BETWEEN":
-        const rightBound = this.evaluateExpression(comparison.rightBound!);
+      case "BETWEEN": {
+        let rightBound: string | number;
+        if (comparison.rightBound) {
+          rightBound = this.evaluateExpression(comparison.rightBound);
+        } else {
+          return false;
+        }
         return (
           Number(leftValue) >= Number(rightValue) &&
           Number(leftValue) <= Number(rightBound)
         );
+      }
       default:
         return false;
     }
