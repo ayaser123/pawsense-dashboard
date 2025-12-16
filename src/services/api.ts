@@ -135,38 +135,6 @@ export const alertsApi = {
     apiClient.delete(`/alerts/${alertId}`),
 };
 
-// Telehealth Endpoints
-export const telehealthApi = {
-  // Get available vets
-  getVets: (params?: AnyObject) =>
-    apiClient.get("/telehealth/vets", { params }),
-
-  // Book consultation
-  bookConsultation: (data: AnyObject) =>
-    apiClient.post("/telehealth/bookings", data),
-
-  // Get booking details
-  getBooking: (bookingId: string) =>
-    apiClient.get(`/telehealth/bookings/${bookingId}`),
-
-  // Cancel booking
-  cancelBooking: (bookingId: string) =>
-    apiClient.put(`/telehealth/bookings/${bookingId}/cancel`, {}),
-
-  // Get consultation history
-  getConsultationHistory: () =>
-    apiClient.get("/telehealth/history"),
-
-  // Upload prescription
-  uploadPrescription: (bookingId: string, file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    return apiClient.post(`/telehealth/bookings/${bookingId}/prescription`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
-};
-
 // Vet Finder Endpoints
 export const vetFinderApi = {
   // Search vets by location
@@ -222,7 +190,6 @@ export default {
   petApi,
   healthApi,
   alertsApi,
-  telehealthApi,
   vetFinderApi,
   imageApi,
 };

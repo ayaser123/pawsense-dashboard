@@ -17,7 +17,6 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         accent: "bg-accent text-accent-foreground hover:bg-accent/90 shadow-soft hover:shadow-elevated hover:-translate-y-0.5",
         hero: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow hover:shadow-elevated hover:-translate-y-1 text-base",
-        telehealth: "bg-success text-success-foreground hover:bg-success/90 shadow-soft hover:-translate-y-0.5",
         emergency: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-soft animate-pulse-soft",
       },
       size: {
