@@ -9,7 +9,7 @@ const apiClient: AxiosInstance = axios.create({
   },
 })
 
-// Add auth token to every request
+// Add auth token and user ID to every request
 apiClient.interceptors.request.use(async (config) => {
   const {
     data: { session },
@@ -17,6 +17,11 @@ apiClient.interceptors.request.use(async (config) => {
 
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`
+  }
+
+  // Add user ID from session
+  if (session?.user?.id) {
+    config.headers["x-user-id"] = session.user.id
   }
 
   if (config.url?.includes("/videos")) {

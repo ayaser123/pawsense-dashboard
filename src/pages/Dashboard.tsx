@@ -162,16 +162,42 @@ export default function Dashboard() {
     }
   }
 
-  if (authLoading) {
+  if (authLoading || petsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center space-y-6"
         >
-          <div className="mb-4 text-6xl">🐾</div>
-          <p className="text-xl text-white">Loading your dashboard...</p>
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-6xl"
+          >
+            🐾
+          </motion.div>
+          <div className="space-y-2">
+            <p className="text-xl font-semibold text-foreground">PawSense</p>
+            <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+          <div className="flex justify-center gap-1">
+            <motion.div
+              animate={{ height: [4, 16, 4] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+              className="w-1 bg-primary rounded-full"
+            />
+            <motion.div
+              animate={{ height: [4, 16, 4] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
+              className="w-1 bg-accent rounded-full"
+            />
+            <motion.div
+              animate={{ height: [4, 16, 4] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
+              className="w-1 bg-primary rounded-full"
+            />
+          </div>
         </motion.div>
       </div>
     )
@@ -184,23 +210,56 @@ export default function Dashboard() {
   // Show empty state if no pets
   if (!petsLoading && pets.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
+      <div className="min-h-screen bg-background">
         <Navbar />
         
         <main className="container mx-auto px-4 py-8 pt-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             className="flex flex-col items-center justify-center min-h-[600px]"
           >
-            <div className="text-center">
-              <div className="mb-6 text-8xl animate-bounce">🐾</div>
-              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                No Pets Yet!
-              </h1>
-              <p className="text-gray-600 text-lg mb-8 max-w-md">
-                Welcome to PawSense! Add your first pet to get started with AI-powered behavior analysis and health monitoring.
-              </p>
+            <div className="text-center max-w-md space-y-8">
+              <motion.div
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-7xl"
+              >
+                🐶
+              </motion.div>
+              
+              <div className="space-y-3">
+                <h1 className="text-3xl font-bold">Welcome to PawSense!</h1>
+                <p className="text-muted-foreground text-base">
+                  Get started by adding your first pet. We'll help you understand their behavior, track their health, and find the best vets nearby.
+                </p>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">✨</span>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm">AI-Powered Analysis</p>
+                    <p className="text-xs text-muted-foreground">Understand your pet's mood and behavior</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">📍</span>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm">Find Vets Near You</p>
+                    <p className="text-xs text-muted-foreground">Discover trusted veterinarians in your area</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">📊</span>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm">Health Tracking</p>
+                    <p className="text-xs text-muted-foreground">Monitor activities and health metrics</p>
+                  </div>
+                </div>
+              </div>
+
               <AddPetDialog onPetAdded={() => window.location.reload()} />
             </div>
           </motion.div>

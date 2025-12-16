@@ -248,6 +248,128 @@ app.get("/api/activity/:petId", (req, res) => {
   }
 });
 
+// --- Pet Management Endpoints ---
+// Mock database for pets (in-memory storage)
+const petDatabase = new Map();
+
+// GET all pets for authenticated user
+app.get("/api/pets", (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"] || "default-user";
+    const userPets = Array.from(petDatabase.values()).filter(p => p.owner_id === userId);
+    
+    console.log("[PETS] Retrieved pets for user:", { userId, count: userPets.length });
+    return res.status(200).json(userPets);
+  } catch (err) {
+    console.error("[PETS] Get pets error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST add new pet
+app.post("/api/pets", (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"] || "default-user";
+    const { name, species, breed, age, weight, color, image_emoji, medical_info } = req.body;
+
+    // Validate required fields
+    if (!name || !species) {
+      return res.status(400).json({ error: "Pet name and species are required" });
+    }
+
+    const petId = randomUUID();
+    const newPet = {
+      id: petId,
+      owner_id: userId,
+      name,
+      species,
+      breed: breed || null,
+      age: age ? parseInt(age) : null,
+      weight: weight ? parseFloat(weight) : null,
+      color: color || null,
+      image_emoji: image_emoji || "🐾",
+      medical_info: medical_info || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    petDatabase.set(petId, newPet);
+    console.log("[PETS] New pet added:", { petId, name, species, userId });
+    
+    return res.status(201).json(newPet);
+  } catch (err) {
+    console.error("[PETS] Add pet error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET single pet
+app.get("/api/pets/:petId", (req, res) => {
+  try {
+    const { petId } = req.params;
+    const pet = petDatabase.get(petId);
+
+    if (!pet) {
+      return res.status(404).json({ error: "Pet not found" });
+    }
+
+    return res.status(200).json(pet);
+  } catch (err) {
+    console.error("[PETS] Get pet error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT update pet
+app.put("/api/pets/:petId", (req, res) => {
+  try {
+    const { petId } = req.params;
+    const pet = petDatabase.get(petId);
+
+    if (!pet) {
+      return res.status(404).json({ error: "Pet not found" });
+    }
+
+    const updates = req.body;
+    const updatedPet = {
+      ...pet,
+      ...updates,
+      id: pet.id,
+      owner_id: pet.owner_id,
+      created_at: pet.created_at,
+      updated_at: new Date().toISOString(),
+    };
+
+    petDatabase.set(petId, updatedPet);
+    console.log("[PETS] Pet updated:", { petId, updates });
+    
+    return res.status(200).json(updatedPet);
+  } catch (err) {
+    console.error("[PETS] Update pet error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE pet
+app.delete("/api/pets/:petId", (req, res) => {
+  try {
+    const { petId } = req.params;
+    const pet = petDatabase.get(petId);
+
+    if (!pet) {
+      return res.status(404).json({ error: "Pet not found" });
+    }
+
+    petDatabase.delete(petId);
+    console.log("[PETS] Pet deleted:", { petId });
+    
+    return res.status(200).json({ success: true, message: "Pet deleted" });
+  } catch (err) {
+    console.error("[PETS] Delete pet error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Backend API running on http://localhost:${PORT}`);
 });
