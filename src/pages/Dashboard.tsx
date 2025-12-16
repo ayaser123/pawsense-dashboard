@@ -8,6 +8,7 @@ import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { AddPetDialog } from "@/components/dashboard/AddPetDialog"
 import { PetSelector } from "@/components/dashboard/PetSelector"
+import { AlertsWindow, type AlertItem } from "@/components/dashboard/AlertsWindow"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert as AlertUI, AlertDescription } from "@/components/ui/alert"
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [alertsFromAnalysis, setAlertsFromAnalysis] = useState<AlertItem[]>([])
 
   // Load nearby vets on component mount
   useEffect(() => {
@@ -108,6 +110,12 @@ export default function Dashboard() {
       
       setAnalysisResult(result)
       setUploadedVideos([...uploadedVideos, result])
+      
+      // Extract alerts from analysis response
+      if (analysis.alerts && analysis.alerts.length > 0) {
+        setAlertsFromAnalysis(analysis.alerts)
+        console.log(`✅ Generated ${analysis.alerts.length} alerts from analysis`)
+      }
       
       // Generate alerts from analysis and save them
       if (user && selectedPet) {
@@ -277,7 +285,107 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Only show after analysis */}
+        {analysisResult && (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+        >
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Pet's Mood</p>
+                    <p className="text-3xl font-bold mt-2 capitalize">{analysisResult.mood}</p>
+                    <p className="text-xs text-muted-foreground mt-1">From latest analysis</p>
+                  </div>
+                  <div className="bg-primary/10 p-4 rounded-lg">
+                    <Heart className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Behavior</p>
+                    <p className="text-3xl font-bold mt-2 capitalize">{analysisResult.behavior}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Detected</p>
+                  </div>
+                  <div className="bg-accent/10 p-4 rounded-lg">
+                    <Activity className="h-6 w-6 text-accent" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Energy Level</p>
+                    <p className="text-3xl font-bold mt-2">{analysisResult.energy}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Current</p>
+                  </div>
+                  <div className="bg-secondary/10 p-4 rounded-lg">
+                    <Zap className="h-6 w-6 text-secondary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Confidence</p>
+                    <p className="text-3xl font-bold mt-2">{(analysisResult.confidence * 100).toFixed(0)}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">Analysis accuracy</p>
+                  </div>
+                  <div className="bg-primary/10 p-4 rounded-lg">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+        )}
+
+        {/* Alerts Window - Only show when alerts exist */}
+        {alertsFromAnalysis.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500" />
+                <h3 className="font-semibold">Analysis Alerts</h3>
+              </div>
+              <AlertsWindow
+                alerts={alertsFromAnalysis}
+                onDismiss={(id) => {
+                  setAlertsFromAnalysis(prev => prev.filter(a => a.id !== id))
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Stats Grid - OLD PLACEHOLDER */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
