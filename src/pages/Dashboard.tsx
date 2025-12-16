@@ -29,7 +29,7 @@ import {
   Sparkles
 } from "lucide-react"
 import { motion } from "framer-motion"
-import { analyzeVideoWithGemini } from "@/services/geminiAPI"
+import { analyzeVideoWithOllama } from "@/services/ollamaAI"
 import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
 import { createAlertFromAnalysis, addAlerts, loadAlerts, deleteAlert } from "@/services/alertsService"
 import type { Veterinarian } from "@/services/locationAPI"
@@ -95,7 +95,7 @@ export default function Dashboard() {
     
     try {
       console.log("[DASHBOARD] Starting video analysis...")
-      const analysis = await analyzeVideoWithGemini(videoFile)
+      const analysis = await analyzeVideoWithOllama(videoFile)
       
       const result: AnalysisResult = {
         ...analysis,

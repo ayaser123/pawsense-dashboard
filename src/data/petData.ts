@@ -88,26 +88,6 @@ export const samplePredictions: BehaviorPrediction[] = [
   },
 ];
 
-export const sampleSleepData: SleepData[] = [
-  { time: "10 PM", deepSleep: 0, lightSleep: 20, awake: 80 },
-  { time: "11 PM", deepSleep: 40, lightSleep: 50, awake: 10 },
-  { time: "12 AM", deepSleep: 70, lightSleep: 25, awake: 5 },
-  { time: "1 AM", deepSleep: 85, lightSleep: 12, awake: 3 },
-  { time: "2 AM", deepSleep: 90, lightSleep: 8, awake: 2 },
-  { time: "3 AM", deepSleep: 75, lightSleep: 20, awake: 5 },
-  { time: "4 AM", deepSleep: 60, lightSleep: 30, awake: 10 },
-  { time: "5 AM", deepSleep: 40, lightSleep: 40, awake: 20 },
-  { time: "6 AM", deepSleep: 20, lightSleep: 30, awake: 50 },
-];
-
-export const sampleActivityPath: ActivityPoint[] = [
-  { lat: 40.7128, lng: -74.006, activity: "Walking", timestamp: "9:00 AM" },
-  { lat: 40.7135, lng: -74.0055, activity: "Playing", timestamp: "9:15 AM" },
-  { lat: 40.714, lng: -74.005, activity: "Sniffing", timestamp: "9:25 AM" },
-  { lat: 40.7145, lng: -74.004, activity: "Running", timestamp: "9:35 AM" },
-  { lat: 40.715, lng: -74.003, activity: "Resting", timestamp: "9:50 AM" },
-];
-
 export const sampleVets: VetLocation[] = [
   {
     id: "1",

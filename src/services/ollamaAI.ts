@@ -25,7 +25,7 @@ export interface AnalysisResponse {
  * @param videoFile - The video file to analyze
  * @returns Analysis results with behavior, mood, energy, and recommendations
  */
-export async function analyzeVideoWithGemini(videoFile: File): Promise<AnalysisResponse> {
+export async function analyzeVideoWithOllama(videoFile: File): Promise<AnalysisResponse> {
   try {
     console.log("[OLLAMA] ⚡ Starting FAST video analysis...");
     console.log("[OLLAMA] File:", videoFile.name, "Size:", (videoFile.size / 1024 / 1024).toFixed(2) + "MB");
