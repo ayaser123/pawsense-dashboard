@@ -9,12 +9,37 @@ if (!root) {
   console.error("❌ Root element not found!");
   document.body.innerHTML = "<h1>Error: Root element #root not found</h1>";
 } else {
-  // Show static content first
+  // Show cute loading screen first
   root.innerHTML = `
-    <div style="padding: 40px; font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh;">
-      <h1 style="color: #0066cc; margin: 0;">✅ Frontend Server is Working!</h1>
-      <p style="font-size: 16px; color: #333;">Static HTML rendered successfully.</p>
-      <p style="font-size: 14px; color: #666;">Loading React app...</p>
+    <div style="position: fixed; inset: 0; background: hsl(0 0% 100%); display: flex; align-items: center; justify-content: center; z-index: 50;">
+      <div style="text-align: center; animation: fadeIn 0.6s ease-out;">
+        <div style="font-size: 60px; margin-bottom: 24px; animation: bounce 2s infinite; animation-timing-function: ease-in-out;">
+          🐾
+        </div>
+        <div style="margin-bottom: 24px;">
+          <p style="font-size: 20px; font-weight: 600; color: #000; margin: 0; font-family: system-ui;">PawSense</p>
+          <p style="font-size: 14px; color: #666; margin: 8px 0 0 0; font-family: system-ui;">Loading your experience...</p>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 4px;">
+          <div style="width: 4px; height: 4px; background: #8b5cf6; border-radius: 999px; animation: barBounce 1.2s infinite; animation-delay: 0ms;"></div>
+          <div style="width: 4px; height: 4px; background: #ec4899; border-radius: 999px; animation: barBounce 1.2s infinite; animation-delay: 200ms;"></div>
+          <div style="width: 4px; height: 4px; background: #8b5cf6; border-radius: 999px; animation: barBounce 1.2s infinite; animation-delay: 400ms;"></div>
+        </div>
+      </div>
+      <style>
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes barBounce {
+          0%, 100% { height: 4px; }
+          50% { height: 16px; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      </style>
     </div>
   `;
 
