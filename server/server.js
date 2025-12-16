@@ -119,65 +119,6 @@ app.post("/auth/create-user", async (req, res) => {
   }
 });
 
-// Auto-confirm user email (required because we disabled email confirmation)
-app.post("/auth/confirm-email", async (req, res) => {
-  try {
-    const { email } = req.body || {};
-
-    if (!email || typeof email !== "string" || !email.includes("@")) {
-      return res.status(422).json({ error: "Invalid email" });
-    }
-
-    console.log("[AUTH] Auto-confirming email for:", email);
-
-    // List all users to find the one with this email
-    let users = [];
-    try {
-      const { data, error } = await supabase.auth.admin.listUsers();
-      if (error) throw error;
-      users = data.users || [];
-    } catch (err) {
-      console.error("[AUTH] Failed to list users:", err);
-      return res.status(500).json({ error: "Failed to list users", details: err.message });
-    }
-
-    const user = users.find(u => u.email === email);
-    if (!user) {
-      console.error("[AUTH] User not found with email:", email);
-      console.log("[AUTH] Available emails:", users.map(u => u.email).join(", "));
-      return res.status(404).json({ error: "User not found", email, availableCount: users.length });
-    }
-
-    console.log("[AUTH] Found user:", user.id, "| Email verified before:", user.email_confirmed_at);
-
-    // Update user to confirm email
-    try {
-      const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
-        email_confirm: true
-      });
-
-      if (error) {
-        console.error("[AUTH] Update error:", error);
-        return res.status(500).json({ error: "Failed to confirm email", details: error.message });
-      }
-
-      console.log("[AUTH] Email confirmed for:", email, "| User ID:", data.user?.id, "| Confirmed at:", data.user?.email_confirmed_at);
-      return res.status(200).json({ 
-        success: true, 
-        message: "Email confirmed", 
-        user: data.user?.id,
-        email_confirmed_at: data.user?.email_confirmed_at
-      });
-    } catch (err) {
-      console.error("[AUTH] Update failed:", err);
-      return res.status(500).json({ error: "Failed to confirm email", details: err.message });
-    }
-  } catch (err) {
-    console.error("[AUTH] confirm-email error:", err);
-    return res.status(500).json({ error: "Internal server error", details: err.message });
-  }
-});
-
 app.post("/auth/login", (req, res) => {
   try {
     const { email, password } = req.body || {};
