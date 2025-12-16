@@ -8,6 +8,7 @@ import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { AddPetDialog } from "@/components/dashboard/AddPetDialog"
 import { PetSelector } from "@/components/dashboard/PetSelector"
+import { ImageUpload } from "@/components/dashboard/ImageUpload"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -536,68 +537,13 @@ export default function Dashboard() {
           {/* Video Analysis Tab */}
           <TabsContent value="video" className="space-y-6 mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Upload Section */}
-              <Card className="lg:col-span-2">
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <Video className="h-5 w-5" />
-                    Video Upload & Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-6">
-                    {/* Upload Area */}
-                    <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-primary transition">
-                      <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <label className="cursor-pointer">
-                        <span className="text-sm font-semibold text-primary hover:text-primary/90">
-                          Click to upload
-                        </span>
-                        <span className="text-muted-foreground"> or drag and drop</span>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          onChange={handleVideoUpload}
-                          className="hidden"
-                        />
-                      </label>
-                      <p className="text-xs text-muted-foreground mt-2">MP4, WebM, or Ogg (up to 500MB)</p>
-                    </div>
-
-                    {/* Selected Video Info */}
-                    {videoFile && (
-                      <div className="p-4 bg-muted rounded-lg border border-input">
-                        <p className="text-sm font-semibold flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-primary" />
-                          {videoFile.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Size: {(videoFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Analyze Button */}
-                    <Button
-                      onClick={handleAnalyzeVideo}
-                      disabled={!videoFile || isAnalyzing}
-                      className="w-full font-semibold py-6 text-lg"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Zap className="h-5 w-5 mr-2 animate-spin" />
-                          Analyzing Video...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="h-5 w-5 mr-2" />
-                          Analyze Video with AI
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Upload Component */}
+              <div className="lg:col-span-2">
+                <ImageUpload 
+                  onImageSelect={(file) => setVideoFile(file)}
+                  petId={selectedPet?.id}
+                />
+              </div>
 
               {/* Analysis Results */}
               <Card>

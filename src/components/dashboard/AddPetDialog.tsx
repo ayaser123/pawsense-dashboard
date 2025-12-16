@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Dog, Cat, Bird, Rabbit, Hamster, Bone } from "lucide-react";
+import { Plus, Dog, Cat, Bird, Rabbit, Rat, Bone, X } from "lucide-react";
 import { Pet, usePets } from "@/hooks/usePets";
 
 interface AddPetDialogProps {
@@ -29,7 +29,7 @@ const petIcons = {
   cat: Cat,
   bird: Bird,
   rabbit: Rabbit,
-  hamster: Hamster,
+  hamster: Rat,
   other: Bone,
 };
 
@@ -45,7 +45,8 @@ const petEmojis = {
 export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { addPet, error } = usePets();
+  const [localError, setLocalError] = useState<string | null>(null);
+  const { addPet } = usePets();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -61,6 +62,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
     if (!formData.name) return;
 
     setLoading(true);
+    setLocalError(null);
     const newPet = await addPet({
       name: formData.name,
       species: formData.species,
@@ -82,12 +84,14 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
       });
       setOpen(false);
       onPetAdded?.(newPet);
+    } else {
+      setLocalError("Failed to add pet. Please try again.");
     }
     setLoading(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -102,17 +106,42 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
         </div>
       </motion.button>
 
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Your Pet</DialogTitle>
-          <DialogDescription>
-            Tell us about your furry, feathered, or fluffy friend
-          </DialogDescription>
-        </DialogHeader>
+      {/* Overlay */}
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+        />
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Slide-in Panel */}
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: open ? 0 : "100%" }}
+        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-background border-l border-border z-50 shadow-lg overflow-y-auto"
+      >
+        <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold">Add Your Pet</h2>
+            <p className="text-xs text-muted-foreground">
+              Tell us about your furry, feathered, or fluffy friend
+            </p>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3 pb-20">
           <div>
-            <Label htmlFor="name">Pet Name *</Label>
+            <Label htmlFor="name" className="text-xs">Pet Name *</Label>
             <Input
               id="name"
               value={formData.name}
@@ -120,12 +149,13 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="e.g., Buddy"
+              className="h-8 text-sm"
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="species">Type of Pet *</Label>
+            <Label htmlFor="species" className="text-xs">Type of Pet *</Label>
             <Select
               value={formData.species}
               onValueChange={(value) =>
@@ -135,7 +165,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 })
               }
             >
-              <SelectTrigger id="species">
+              <SelectTrigger id="species" className="h-8 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -161,7 +191,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 </SelectItem>
                 <SelectItem value="hamster">
                   <span className="flex items-center gap-2">
-                    <Hamster className="h-4 w-4" /> Hamster
+                    <Rat className="h-4 w-4" /> Hamster
                   </span>
                 </SelectItem>
                 <SelectItem value="other">
@@ -174,7 +204,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="breed">Breed</Label>
+            <Label htmlFor="breed" className="text-xs">Breed</Label>
             <Input
               id="breed"
               value={formData.breed}
@@ -182,12 +212,13 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 setFormData({ ...formData, breed: e.target.value })
               }
               placeholder="e.g., Golden Retriever"
+              className="h-8 text-sm"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="age">Age (years)</Label>
+              <Label htmlFor="age" className="text-xs">Age (years)</Label>
               <Input
                 id="age"
                 type="number"
@@ -196,12 +227,13 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                   setFormData({ ...formData, age: e.target.value })
                 }
                 placeholder="e.g., 3"
+                className="h-8 text-sm"
                 min="0"
               />
             </div>
 
             <div>
-              <Label htmlFor="weight">Weight (kg)</Label>
+              <Label htmlFor="weight" className="text-xs">Weight (kg)</Label>
               <Input
                 id="weight"
                 type="number"
@@ -210,6 +242,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                   setFormData({ ...formData, weight: e.target.value })
                 }
                 placeholder="e.g., 25.5"
+                className="h-8 text-sm"
                 min="0"
                 step="0.1"
               />
@@ -217,7 +250,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="color">Color/Markings</Label>
+            <Label htmlFor="color" className="text-xs">Color/Markings</Label>
             <Input
               id="color"
               value={formData.color}
@@ -225,12 +258,17 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 setFormData({ ...formData, color: e.target.value })
               }
               placeholder="e.g., Brown and white"
+              className="h-8 text-sm"
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {localError && (
+            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
+              {localError}
+            </div>
+          )}
 
-          <div className="flex gap-3 justify-end pt-4">
+          <div className="flex gap-3 justify-end pt-4 border-t">
             <Button
               type="button"
               variant="outline"
@@ -243,7 +281,7 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </motion.div>
+    </>
   );
 }

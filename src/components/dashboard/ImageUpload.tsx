@@ -2,20 +2,40 @@ import { motion } from "framer-motion";
 import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, X, Sparkles, Camera } from "lucide-react";
+import { Upload, X, Sparkles, Camera, AlertCircle } from "lucide-react";
 import { useVideoAnalysis } from "@/hooks/useVideoAnalysis";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ImageUploadProps {
   onImageSelect: (file: File) => void;
+  petId?: string;
 }
 
-export function ImageUpload({ onImageSelect }: ImageUploadProps) {
+type AnalysisCategory = "behavior" | "health" | "nutrition" | "activity" | "safety" | "general";
+
+const ANALYSIS_CATEGORIES: { value: AnalysisCategory; label: string; description: string }[] = [
+  { value: "behavior", label: "Behavior Analysis", description: "Analyze pet behavior and mood" },
+  { value: "health", label: "Health Check", description: "Look for signs of illness or injury" },
+  { value: "nutrition", label: "Nutrition Assessment", description: "Evaluate body condition and diet" },
+  { value: "activity", label: "Activity Level", description: "Assess exercise and energy levels" },
+  { value: "safety", label: "Safety Check", description: "Check for hazards or unsafe situations" },
+  { value: "general", label: "General Scan", description: "Overall comprehensive analysis" },
+];
+
+export function ImageUpload({ onImageSelect, petId }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [isVideoPreview, setIsVideoPreview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<AnalysisCategory>("general");
 
   const { uploadVideo, analysis, isUploading, isAnalyzing, uploadProgress, error } =
     useVideoAnalysis();
@@ -112,43 +132,67 @@ export function ImageUpload({ onImageSelect }: ImageUploadProps) {
         />
 
         {!preview ? (
-          <motion.div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
-            animate={{
-              borderColor: isDragging ? "hsl(var(--primary))" : "hsl(var(--border))",
-              backgroundColor: isDragging ? "hsl(var(--primary) / 0.05)" : "transparent",
-            }}
-            className="border-2 border-dashed rounded-xl p-8 cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5"
-          >
-            <div className="flex flex-col items-center gap-4 text-center">
-              <motion.div
-                animate={{ y: isDragging ? -5 : 0 }}
-                className="p-4 rounded-full bg-primary/10"
-              >
-                <Upload className="h-8 w-8 text-primary" />
-              </motion.div>
-              <div>
-                <p className="font-heading font-bold text-foreground">
-                  Drop your pet's video here
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  or click to browse • MP4, MOV up to 50MB
-                </p>
+          <div className="space-y-4">
+            <motion.div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileInputRef.current?.click()}
+              animate={{
+                borderColor: isDragging ? "hsl(var(--primary))" : "hsl(var(--border))",
+                backgroundColor: isDragging ? "hsl(var(--primary) / 0.05)" : "transparent",
+              }}
+              className="border-2 border-dashed rounded-xl p-8 cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <div className="flex flex-col items-center gap-4 text-center">
+                <motion.div
+                  animate={{ y: isDragging ? -5 : 0 }}
+                  className="p-4 rounded-full bg-primary/10"
+                >
+                  <Upload className="h-8 w-8 text-primary" />
+                </motion.div>
+                <div>
+                  <p className="font-heading font-bold text-foreground">
+                    Drop your pet's video or photo here
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    or click to browse • MP4, MOV, JPG, PNG up to 50MB
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Select File
+                </Button>
               </div>
-              <Button variant="outline" size="sm" className="mt-2">
-                <Camera className="h-4 w-4 mr-2" />
-                Select Video
-              </Button>
+            </motion.div>
+
+            <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+              <p className="text-xs font-semibold text-accent mb-2 uppercase tracking-wide">
+                Analysis Categories
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {ANALYSIS_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setSelectedCategory(cat.value)}
+                    className={`text-left p-2 rounded-lg border transition-all ${
+                      selectedCategory === cat.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold text-foreground">{cat.label}</p>
+                    <p className="text-xs text-muted-foreground">{cat.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
-          </motion.div>
+          </div>
         ) : (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative"
+            className="space-y-4"
           >
             {isVideoPreview ? (
               <video
@@ -162,6 +206,30 @@ export function ImageUpload({ onImageSelect }: ImageUploadProps) {
                 alt="Pet preview"
                 className="w-full h-48 object-cover rounded-xl"
               />
+            )}
+
+            {/* Category Selection with Preview */}
+            {!isUploading && !isAnalyzing && (
+              <div className="p-3 bg-accent/5 border border-accent/20 rounded-lg">
+                <p className="text-xs font-semibold text-accent mb-2 uppercase">
+                  Analysis Focus
+                </p>
+                <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as AnalysisCategory)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ANALYSIS_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        <span>{cat.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {ANALYSIS_CATEGORIES.find((c) => c.value === selectedCategory)?.description}
+                </p>
+              </div>
             )}
 
             {(isUploading || isAnalyzing) && (
@@ -206,35 +274,34 @@ export function ImageUpload({ onImageSelect }: ImageUploadProps) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="absolute bottom-2 left-2 right-2 p-2 bg-card/90 backdrop-blur-sm rounded-lg"
+                transition={{ delay: 0.2 }}
+                className="flex gap-2"
               >
-                <div className="flex flex-col gap-2">
-                  {error && (
+                {error && (
+                  <div className="flex-1 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-destructive font-medium">{error}</p>
-                  )}
-                  {analysis && (
-                    <div className="text-sm space-y-1">
-                      <p className="font-medium text-primary">✓ Analysis Complete</p>
-                      <p className="text-xs text-muted-foreground">
-                        Mood: <span className="font-semibold">{analysis.mood}</span>
+                  </div>
+                )}
+                {analysis && (
+                  <div className="flex-1 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <p className="text-sm font-semibold text-primary mb-2">✓ Analysis Complete</p>
+                    <div className="text-xs space-y-1 text-muted-foreground">
+                      <p>
+                        Mood: <span className="font-semibold text-foreground">{analysis.mood}</span>
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Activity: <span className="font-semibold">{analysis.activity_level}</span>
+                      <p>
+                        Activity: <span className="font-semibold text-foreground">{analysis.activity_level}</span>
                       </p>
                     </div>
-                  )}
-                  {!analysis && (
-                    <Button
-                      size="sm"
-                      onClick={handleAnalyze}
-                      className="w-full"
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Analyze with AI
-                    </Button>
-                  )}
-                </div>
+                  </div>
+                )}
+                {!error && !analysis && (
+                  <Button onClick={handleAnalyze} className="flex-1">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Analyze with AI ({selectedCategory})
+                  </Button>
+                )}
               </motion.div>
             )}
           </motion.div>
