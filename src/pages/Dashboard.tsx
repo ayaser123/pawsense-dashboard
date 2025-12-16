@@ -29,7 +29,10 @@ import {
   Shield,
   Calendar,
   Loader,
-  Plus
+  Plus,
+  Dog,
+  MapPin,
+  Sparkles
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { analyzeVideoWithGemini, getMockAnalysis } from "@/services/geminiAPI"
@@ -224,9 +227,8 @@ export default function Dashboard() {
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="text-7xl"
               >
-                🐶
+                <Dog className="h-24 w-24 text-primary mx-auto" />
               </motion.div>
               
               <div className="space-y-3">
@@ -238,21 +240,21 @@ export default function Dashboard() {
 
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-xl">✨</span>
+                  <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="text-left">
                     <p className="font-semibold text-sm">AI-Powered Analysis</p>
                     <p className="text-xs text-muted-foreground">Understand your pet's mood and behavior</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-xl">📍</span>
+                  <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="text-left">
                     <p className="font-semibold text-sm">Find Vets Near You</p>
                     <p className="text-xs text-muted-foreground">Discover trusted veterinarians in your area</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-xl">📊</span>
+                  <BarChart3 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="text-left">
                     <p className="font-semibold text-sm">Health Tracking</p>
                     <p className="text-xs text-muted-foreground">Monitor activities and health metrics</p>

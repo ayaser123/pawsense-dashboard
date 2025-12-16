@@ -17,12 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Dog, Cat, Bird, Rabbit, Hamster, Bone } from "lucide-react";
 import { Pet, usePets } from "@/hooks/usePets";
 
 interface AddPetDialogProps {
   onPetAdded?: (pet: Pet) => void;
 }
+
+const petIcons = {
+  dog: Dog,
+  cat: Cat,
+  bird: Bird,
+  rabbit: Rabbit,
+  hamster: Hamster,
+  other: Bone,
+};
 
 const petEmojis = {
   dog: "🐕",
@@ -130,12 +139,36 @@ export function AddPetDialog({ onPetAdded }: AddPetDialogProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="dog">🐕 Dog</SelectItem>
-                <SelectItem value="cat">🐱 Cat</SelectItem>
-                <SelectItem value="bird">🐦 Bird</SelectItem>
-                <SelectItem value="rabbit">🐰 Rabbit</SelectItem>
-                <SelectItem value="hamster">🐹 Hamster</SelectItem>
-                <SelectItem value="other">🦴 Other</SelectItem>
+                <SelectItem value="dog">
+                  <span className="flex items-center gap-2">
+                    <Dog className="h-4 w-4" /> Dog
+                  </span>
+                </SelectItem>
+                <SelectItem value="cat">
+                  <span className="flex items-center gap-2">
+                    <Cat className="h-4 w-4" /> Cat
+                  </span>
+                </SelectItem>
+                <SelectItem value="bird">
+                  <span className="flex items-center gap-2">
+                    <Bird className="h-4 w-4" /> Bird
+                  </span>
+                </SelectItem>
+                <SelectItem value="rabbit">
+                  <span className="flex items-center gap-2">
+                    <Rabbit className="h-4 w-4" /> Rabbit
+                  </span>
+                </SelectItem>
+                <SelectItem value="hamster">
+                  <span className="flex items-center gap-2">
+                    <Hamster className="h-4 w-4" /> Hamster
+                  </span>
+                </SelectItem>
+                <SelectItem value="other">
+                  <span className="flex items-center gap-2">
+                    <Bone className="h-4 w-4" /> Other
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
