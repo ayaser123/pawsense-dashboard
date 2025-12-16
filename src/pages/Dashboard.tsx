@@ -17,16 +17,13 @@ import {
   Upload, 
   Heart, 
   Activity, 
-  Clock, 
   Zap,
   AlertCircle,
   CheckCircle,
   Video,
   BarChart3,
-  Shield,
   Calendar,
   Loader,
-  Plus,
   Dog,
   MapPin,
   Sparkles
@@ -385,81 +382,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Stats Grid - OLD PLACEHOLDER */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-        >
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Pet's Mood</p>
-                    <p className="text-3xl font-bold mt-2">Happy</p>
-                    <p className="text-xs text-muted-foreground mt-1">+12% from yesterday</p>
-                  </div>
-                  <div className="bg-primary/10 p-4 rounded-lg">
-                    <Heart className="h-6 w-6 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Activity Level</p>
-                    <p className="text-3xl font-bold mt-2">8.2k</p>
-                    <p className="text-xs text-muted-foreground mt-1">Steps today</p>
-                  </div>
-                  <div className="bg-accent/10 p-4 rounded-lg">
-                    <Activity className="h-6 w-6 text-accent" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Sleep Quality</p>
-                    <p className="text-3xl font-bold mt-2">8.5h</p>
-                    <p className="text-xs text-muted-foreground mt-1">Last night</p>
-                  </div>
-                  <div className="bg-secondary/10 p-4 rounded-lg">
-                    <Clock className="h-6 w-6 text-secondary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Health Score</p>
-                    <p className="text-3xl font-bold mt-2">92%</p>
-                    <p className="text-xs text-muted-foreground mt-1">Excellent</p>
-                  </div>
-                  <div className="bg-primary/10 p-4 rounded-lg">
-                    <Shield className="h-6 w-6 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </motion.div>
 
         {/* Video Analysis Section */}
         <div className="space-y-6 mt-6">
