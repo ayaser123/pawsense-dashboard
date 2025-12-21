@@ -25,6 +25,11 @@ export interface AnalysisResult {
   uploadedAt: string;
   fileName: string;
   id?: number;
+  // Extended ML pipeline fields
+  emotional_states?: Array<{ emotion: string; confidence: number }>;
+  behavior_patterns?: string[];
+  overall_wellbeing_score?: number;
+  source?: "ml-pipeline" | "ollama-fallback" | "mock-fallback";
 }
 
 // Legacy Alert interface for backward compatibility

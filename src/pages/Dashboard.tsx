@@ -29,7 +29,7 @@ import {
   Sparkles
 } from "lucide-react"
 import { motion } from "framer-motion"
-import { analyzeVideoWithOllama } from "@/services/ollamaAI"
+import { analyzeVideo, type VideoAnalysisResult } from "@/services/videoAnalysisService"
 import { searchNearbyVets, getUserLocation } from "@/services/locationAPI"
 import { createAlertFromAnalysis, addAlerts, loadAlerts, deleteAlert, markAlertAsRead } from "@/services/alertsService"
 import type { Veterinarian } from "@/services/locationAPI"
@@ -55,6 +55,7 @@ export default function Dashboard() {
   const [uploadedVideos, setUploadedVideos] = useState<AnalysisResult[]>([])
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -106,26 +107,47 @@ export default function Dashboard() {
     }
 
     setIsAnalyzing(true)
+    setUploadProgress(0)
     
     try {
-      console.log("[DASHBOARD] Starting video analysis...")
-      const analysis = await analyzeVideoWithOllama(videoFile)
+      console.log("[DASHBOARD] Starting video analysis via backend ML pipeline...")
+      
+      // Call the new backend-based video analysis service
+      const analysis: VideoAnalysisResult = await analyzeVideo(
+        videoFile, 
+        selectedPet?.id,
+        (progress) => setUploadProgress(progress)
+      )
+      
+      console.log("[DASHBOARD] Analysis complete:", analysis)
+      console.log("[DASHBOARD] Source:", analysis.source)
       
       const result: AnalysisResult = {
-        ...analysis,
-        duration: "2m 34s",
+        // Use legacy format fields for backward compatibility
+        behavior: analysis.behavior || analysis.behavior_patterns?.[0] || "Normal activity",
+        mood: analysis.mood || analysis.emotional_states?.[0]?.emotion || "Calm",
+        energy: analysis.energy || "Medium",
+        confidence: analysis.confidence || analysis.emotional_states?.[0]?.confidence || 0.7,
+        recommendations: analysis.recommendations || [],
+        duration: "analyzed",
         uploadedAt: new Date().toLocaleString(),
         id: Date.now(),
-        fileName: videoFile.name
+        fileName: videoFile.name,
+        // Extended ML pipeline data
+        emotional_states: analysis.emotional_states,
+        behavior_patterns: analysis.behavior_patterns,
+        overall_wellbeing_score: analysis.overall_wellbeing_score,
+        source: analysis.source,
       }
       
       setAnalysisResult(result)
       setUploadedVideos([...uploadedVideos, result])
       
-      // Extract alerts from analysis response
-      if (analysis.alerts && analysis.alerts.length > 0) {
-        setAlertsFromAnalysis(analysis.alerts)
-        console.log(`✅ Generated ${analysis.alerts.length} alerts from analysis`)
+      // Extract alerts from analysis response (if any exist from legacy services)
+      const analysisWithAlerts = analysis as VideoAnalysisResult & { alerts?: any[] }
+      if (analysisWithAlerts.alerts && analysisWithAlerts.alerts.length > 0) {
+        setAlertsFromAnalysis(analysisWithAlerts.alerts)
+        console.log(`✅ Generated ${analysisWithAlerts.alerts.length} alerts from analysis`)
       }
       
       // Generate alerts from analysis and save them
@@ -141,9 +163,11 @@ export default function Dashboard() {
       // setVideoFile(null)
     } catch (error) {
       console.error("Analysis error:", error)
-      alert("Failed to analyze video. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
+      alert(`Failed to analyze video: ${errorMessage}`)
     } finally {
       setIsAnalyzing(false)
+      setUploadProgress(0)
     }
   }
 
@@ -483,7 +507,9 @@ export default function Dashboard() {
                           {isAnalyzing ? (
                             <>
                               <Loader className="h-4 w-4 mr-2 animate-spin" />
-                              Analyzing...
+                              {uploadProgress < 100 
+                                ? `Uploading... ${uploadProgress}%` 
+                                : "Analyzing with AI..."}
                             </>
                           ) : (
                             <>
@@ -492,6 +518,14 @@ export default function Dashboard() {
                             </>
                           )}
                         </Button>
+                        {isAnalyzing && uploadProgress > 0 && (
+                          <div className="w-full bg-muted rounded-full h-2 mt-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
