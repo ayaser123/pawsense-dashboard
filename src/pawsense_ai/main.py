@@ -150,4 +150,6 @@ def health_check() -> JSONResponse:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=os.environ.get("API_HOST"), port=os.environ.get("API_PORT"))
+    host = os.environ.get("API_HOST", "0.0.0.0")
+    port = int(os.environ.get("API_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

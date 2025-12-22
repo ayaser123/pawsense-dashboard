@@ -43,3 +43,8 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+.env
+src/pawsense_ai/.env
+src/pawsense_ai/venv/
+src/pawsense_ai/__pycache__/
+uploads/
