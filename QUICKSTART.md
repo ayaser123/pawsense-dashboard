@@ -2,7 +2,7 @@
 
 ## Installation
 
-The refactored code is already integrated. Just build and run:
+The code is already integrated. Just build and run:
 
 ```bash
 npm install
